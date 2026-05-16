@@ -1,0 +1,83 @@
+# -------------------------
+# Python
+# -------------------------
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pdb
+*.egg-info/
+*.egg
+*.log
+
+# -------------------------
+# Virtual Environments
+# -------------------------
+.venv/
+venv/
+env/
+ENV/
+
+# -------------------------
+# Jupyter Notebook
+# -------------------------
+.ipynb_checkpoints/
+.notebooks_cache/
+*.ipynb_convert/
+
+# -------------------------
+# VS Code
+# -------------------------
+.vscode/
+.history/
+
+# -------------------------
+# OS-specific
+# -------------------------
+.DS_Store
+Thumbs.db
+
+# -------------------------
+# PyTorch / Training Artifacts
+# -------------------------
+runs/
+logs/
+checkpoints/
+outputs/
+*.pt
+*.pth
+*.ckpt
+
+# -------------------------
+# Data (RECOLA, SEWA, synthetic)
+# -------------------------
+data/
+datasets/cache/
+datasets/tmp/
+*.wav
+*.mp4
+*.csv
+*.hdf5
+*.npz
+
+# -------------------------
+# Environment / Build
+# -------------------------
+build/
+dist/
+*.spec
+
+# -------------------------
+# Temporary files
+# -------------------------
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+
+# -------------------------
+# Ignore large experiment folders
+# -------------------------
+experiments/
+results/
