@@ -81,3 +81,9 @@ dist/
 # -------------------------
 experiments/
 results/
+
+
+# -------------------------
+# Ignore python_print_tree.py
+# -------------------------
+python_print_tree.py
