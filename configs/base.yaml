@@ -1,0 +1,33 @@
+dataset:
+  name: synthetic
+  length: 5000
+  T: 50
+  S: 10
+
+model:
+  modality_dim: 128
+  num_modalities: 4
+
+  fusion: "qsal"   # options: qsal, classical, pqc
+
+  qsal:
+    input_dim: 64          # after projection 128 → 64
+    num_heads: 2
+    num_qubits: 4
+    circuit_depth: 2
+    encoding: "angle"
+    entanglement: "ring"
+
+  transformer:
+    d_model: 256
+    nhead: 4
+    num_encoder_layers: 4
+    num_decoder_layers: 4
+    dim_feedforward: 512
+    dropout: 0.1
+
+training:
+  batch_size: 16
+  lr: 1e-4
+  epochs: 5
+  device: "cuda"

@@ -87,3 +87,6 @@ results/
 # Ignore python_print_tree.py
 # -------------------------
 python_print_tree.py
+export_project.py
+project_dump.md
+project_dump.pdf
