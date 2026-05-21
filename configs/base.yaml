@@ -31,3 +31,9 @@ training:
   lr: 1e-4
   epochs: 5
   device: "cuda"
+
+fusion:
+  type: classical
+  fusion_dim: 64
+  num_heads: 2
+  transformer_dim: 256
