@@ -128,7 +128,9 @@ class MultimodalQEmotionModel(nn.Module):
         # fused: (B, T, 256)
 
         # 3. Temporal modeling
-        enc_out, dec_out = self.temporal(fused)
+        va_hist = batch["va_hist"]          # (B, T, 2)
+        enc_out, dec_out = self.temporal(fused, va_hist)
+
         # enc_out: (B, T, 256)
         # dec_out: (B, S, 256)
 

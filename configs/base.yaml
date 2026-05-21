@@ -8,15 +8,13 @@ model:
   modality_dim: 128
   num_modalities: 4
 
-  fusion: "qsal"   # options: qsal, classical, pqc
-
-  qsal:
-    input_dim: 64          # after projection 128 → 64
-    num_heads: 2
-    num_qubits: 4
-    circuit_depth: 2
-    encoding: "angle"
-    entanglement: "ring"
+  fusion:
+    type: qsal            # options: classical, qsal
+    fusion_dim: 64        # 128 → 64 projection
+    num_heads: 2          # modality attention heads
+    num_qubits: 4         # PQC width
+    circuit_depth: 2      # PQC depth
+    transformer_dim: 256  # output → Transformer input
 
   transformer:
     d_model: 256
@@ -31,17 +29,3 @@ training:
   lr: 1e-4
   epochs: 5
   device: "cuda"
-
-fusion:
-  type: classical
-  fusion_dim: 64
-  num_heads: 2
-  transformer_dim: 256
-
-fusion:
-  type: qsal
-  fusion_dim: 64
-  num_heads: 2
-  num_qubits: 4
-  circuit_depth: 2
-  transformer_dim: 256
