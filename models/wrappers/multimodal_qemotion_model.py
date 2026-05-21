@@ -60,7 +60,17 @@ class MultimodalQEmotionModel(nn.Module):
                 transformer_dim=fusion_cfg["transformer_dim"],
             )
         elif fusion_cfg["type"] == "qsal":
-            raise NotImplementedError("QSAL fusion will be added next.")
+            from models.fusion.qsal_fusion import QSALFusion
+            self.fusion = QSALFusion(
+                modality_dim=self.modality_dim,
+                fusion_dim=fusion_cfg["fusion_dim"],
+                num_modalities=self.num_modalities,
+                num_heads=fusion_cfg["num_heads"],
+                num_qubits=fusion_cfg["num_qubits"],
+                circuit_depth=fusion_cfg["circuit_depth"],
+                transformer_dim=fusion_cfg["transformer_dim"],
+            )
+
         else:
             raise ValueError(f"Unknown fusion type: {fusion_cfg['type']}")
 

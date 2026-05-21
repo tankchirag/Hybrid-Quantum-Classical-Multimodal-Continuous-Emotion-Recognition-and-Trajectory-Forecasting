@@ -37,3 +37,11 @@ fusion:
   fusion_dim: 64
   num_heads: 2
   transformer_dim: 256
+
+fusion:
+  type: qsal
+  fusion_dim: 64
+  num_heads: 2
+  num_qubits: 4
+  circuit_depth: 2
+  transformer_dim: 256
