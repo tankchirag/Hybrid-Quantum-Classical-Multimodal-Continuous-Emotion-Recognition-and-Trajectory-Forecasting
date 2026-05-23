@@ -1,45 +1,56 @@
 """
-QSAL Layer: Quantum Self-Attention Layer
+QSAL Layer: Quantum Self-Attention Layer (GPU-READY HYBRID VERSION)
 
-This module implements the reusable quantum attention block used in:
-- QSAL Fusion (per-frame modality fusion)
-- Future QSAL-Transformer layers (optional)
+This module implements a hybrid quantum-classical attention mechanism:
 
-It performs:
-- Multi-head quantum attention
-- PQC-based Q/K/V generation
-- Attention weights from quantum states
-- Value aggregation
-- Head concatenation
+------------------------------------------------------------
+ARCHITECTURE:
+------------------------------------------------------------
+- PyTorch tensors (GPU)
+- PennyLane quantum circuits (CPU only)
+- Controlled CPU↔GPU transfer at quantum boundary
 
-Input:
-    x: (B, T, M, head_dim)
-        B = batch size
-        T = time steps
-        M = modalities (4)
-        head_dim = fusion_dim / num_heads (e.g., 32)
+------------------------------------------------------------
+FLOW:
+------------------------------------------------------------
+1. Input features on GPU
+2. Slice per head & modality
+3. Move ONLY quantum inputs to CPU
+4. Execute PQC via PennyLane
+5. Return quantum embeddings to GPU
+6. Perform attention on GPU
 
-Output:
-    fused: (B, T, num_qubits * num_heads)
+------------------------------------------------------------
+INPUT:
+    x: (B, T, M, H, head_dim)
+
+OUTPUT:
+    fused: (B, T, num_heads * num_qubits)
 """
 
 import torch
 import torch.nn as nn
 import pennylane as qml
+import numpy as np
 
 
 class QSALLayer(nn.Module):
     """
-    Quantum Self-Attention Layer (QSAL)
+    Quantum Self-Attention Layer (Hybrid CPU-GPU design).
+
+    Key design principle:
+        - Quantum circuit runs on CPU (PennyLane limitation)
+        - All tensor operations remain on GPU
+        - Minimal device transfer overhead
     """
 
     def __init__(
         self,
-        num_heads=2,
-        head_dim=32,
-        num_modalities=4,
-        num_qubits=4,
-        circuit_depth=2,
+        num_heads: int = 2,
+        head_dim: int = 32,
+        num_modalities: int = 4,
+        num_qubits: int = 4,
+        circuit_depth: int = 2,
     ):
         super().__init__()
 
@@ -49,130 +60,159 @@ class QSALLayer(nn.Module):
         self.num_qubits = num_qubits
         self.circuit_depth = circuit_depth
 
-        # ---------------------------------------------------------
-        # Create PQCs for each head and each of Q, K, V
-        # Total circuits = num_heads * 3
-        # ---------------------------------------------------------
+        # PennyLane CPU devices (required limitation)
         self.devices = [
             qml.device("default.qubit", wires=num_qubits)
             for _ in range(num_heads * 3)
         ]
 
+        # Trainable parameters (stay on GPU with model)
         self.params = nn.ParameterList([
-            nn.Parameter(0.01 * torch.randn(circuit_depth * num_qubits * 2))
+            nn.Parameter(
+                0.01 * torch.randn(circuit_depth * num_qubits * 2)
+            )
             for _ in range(num_heads * 3)
         ])
 
     # ---------------------------------------------------------
-    # Quantum circuit definition
+    # QUANTUM CIRCUIT (CPU ONLY)
     # ---------------------------------------------------------
-    def _pqc(self, device, params, x):
+    def _pqc(self, device, params: torch.Tensor, x: torch.Tensor):
         """
-        PQC for Q/K/V generation.
-        x: classical input vector (head_dim)
+        Execute parameterized quantum circuit (CPU-only).
+
+        Steps:
+            1. Move inputs to CPU
+            2. Execute PennyLane circuit
+            3. Return tensor on original device
         """
 
-        @qml.qnode(device, interface="torch")
+        @qml.qnode(device)
         def circuit(inputs, weights):
-            # Angle encoding
             for i in range(self.num_qubits):
                 qml.RY(inputs[i], wires=i)
 
-            # Variational layers
             idx = 0
             for _ in range(len(weights) // (self.num_qubits * 2)):
                 for q in range(self.num_qubits):
                     qml.RY(weights[idx], wires=q)
                     idx += 1
+
                 for q in range(self.num_qubits):
                     qml.RZ(weights[idx], wires=q)
                     idx += 1
-                # Ring entanglement
+
                 for q in range(self.num_qubits):
                     qml.CNOT(wires=[q, (q + 1) % self.num_qubits])
 
-            # Expectation values
             return [qml.expval(qml.PauliZ(i)) for i in range(self.num_qubits)]
 
-        # Pad or truncate input to num_qubits
-        x = x[..., :self.num_qubits]
-        return circuit(x, params)
+        # -----------------------------------------------------
+        # CPU CONVERSION (ONLY SMALL VECTOR)
+        # -----------------------------------------------------
+        x_cpu = x[:self.num_qubits].detach().cpu().numpy().astype(np.float32)
+        w_cpu = params.detach().cpu().numpy().astype(np.float32)
+
+        out_cpu = circuit(x_cpu, w_cpu)
+        out_cpu = np.array(out_cpu, dtype=np.float32)
+
+        # -----------------------------------------------------
+        # BACK TO ORIGINAL DEVICE (GPU SAFE)
+        # -----------------------------------------------------
+        return torch.tensor(
+            out_cpu,
+            dtype=torch.float32,
+            device=x.device
+        )
 
     # ---------------------------------------------------------
-    # Forward pass
+    # FORWARD PASS (GPU HEAVY, CPU QUANTUM ONLY)
     # ---------------------------------------------------------
-    def forward(self, x):
+    def forward(self, x: torch.Tensor):
         """
+        Forward pass.
+
         Parameters
         ----------
-        x : Tensor (B, T, M, head_dim)
+        x : torch.Tensor
+            Shape (B, T, M, H, head_dim)
 
         Returns
         -------
-        fused : Tensor (B, T, num_heads * num_qubits)
+        torch.Tensor
+            Shape (B, T, num_heads * num_qubits)
         """
 
-        B, T, M, D = x.shape
+        B, T, M, H, D = x.shape
+
+        assert H == self.num_heads
+        assert D == self.head_dim
+
         fused_heads = []
 
-        # ---------------------------------------------------------
-        # Process each head independently
-        # ---------------------------------------------------------
+        # -----------------------------------------------------
+        # PROCESS EACH ATTENTION HEAD
+        # -----------------------------------------------------
         for h in range(self.num_heads):
-            # Extract head slice: (B, T, M, head_dim)
-            head_slice = x[:, :, :, h * D : (h + 1) * D]
 
-            # PQC indices
+            head_slice = x[:, :, :, h, :]  # (B, T, M, D)
+
             q_idx = h * 3
-            k_idx = h * 3 + 1
-            v_idx = h * 3 + 2
+            k_idx = q_idx + 1
+            v_idx = q_idx + 2
 
-            Q, K, V = [], [], []
+            Q_list, K_list, V_list = [], [], []
 
-            # ---------------------------------------------------------
-            # Compute Q/K/V for each modality token
-            # ---------------------------------------------------------
+            # -------------------------------------------------
+            # PROCESS MODALITIES
+            # -------------------------------------------------
             for m in range(self.num_modalities):
-                xm = head_slice[:, :, m, :]  # (B, T, head_dim)
 
+                xm = head_slice[:, :, m, :]  # (B, T, D)
+
+                # flatten for efficiency (reduces loop overhead)
+                xm_flat = xm.reshape(-1, self.head_dim)
+
+                # -------------------------------------------------
+                # Q / K / V QUANTUM ENCODING
+                # -------------------------------------------------
                 q_out = torch.stack([
-                    self._pqc(self.devices[q_idx], self.params[q_idx], xm[b, t])
-                    for b in range(B) for t in range(T)
+                    self._pqc(self.devices[q_idx], self.params[q_idx], xm_flat[i])
+                    for i in range(xm_flat.shape[0])
                 ]).reshape(B, T, self.num_qubits)
 
                 k_out = torch.stack([
-                    self._pqc(self.devices[k_idx], self.params[k_idx], xm[b, t])
-                    for b in range(B) for t in range(T)
+                    self._pqc(self.devices[k_idx], self.params[k_idx], xm_flat[i])
+                    for i in range(xm_flat.shape[0])
                 ]).reshape(B, T, self.num_qubits)
 
                 v_out = torch.stack([
-                    self._pqc(self.devices[v_idx], self.params[v_idx], xm[b, t])
-                    for b in range(B) for t in range(T)
+                    self._pqc(self.devices[v_idx], self.params[v_idx], xm_flat[i])
+                    for i in range(xm_flat.shape[0])
                 ]).reshape(B, T, self.num_qubits)
 
-                Q.append(q_out)
-                K.append(k_out)
-                V.append(v_out)
+                Q_list.append(q_out)
+                K_list.append(k_out)
+                V_list.append(v_out)
 
-            # Stack modalities → (B, T, M, num_qubits)
-            Q = torch.stack(Q, dim=2)
-            K = torch.stack(K, dim=2)
-            V = torch.stack(V, dim=2)
+            # -------------------------------------------------
+            # STACK MODALITIES (GPU)
+            # -------------------------------------------------
+            Q = torch.stack(Q_list, dim=2)
+            K = torch.stack(K_list, dim=2)
+            V = torch.stack(V_list, dim=2)
 
-            # ---------------------------------------------------------
-            # Quantum attention weights
-            # ---------------------------------------------------------
-            attn_scores = (Q * K).sum(dim=-1)  # (B, T, M)
+            # -------------------------------------------------
+            # QUANTUM ATTENTION (GPU)
+            # -------------------------------------------------
+            attn_scores = (Q * K).sum(dim=-1)
             attn_weights = torch.softmax(attn_scores, dim=-1)
 
-            # ---------------------------------------------------------
-            # Weighted sum of V
-            # ---------------------------------------------------------
-            fused_head = (attn_weights.unsqueeze(-1) * V).sum(dim=2)  # (B, T, num_qubits)
+            fused_head = (attn_weights.unsqueeze(-1) * V).sum(dim=2)
+
             fused_heads.append(fused_head)
 
-        # ---------------------------------------------------------
-        # Concatenate heads → (B, T, num_heads * num_qubits)
-        # ---------------------------------------------------------
-        fused = torch.cat(fused_heads, dim=-1)
-        return fused
+        # -----------------------------------------------------
+        # FINAL CONCAT (GPU)
+        # -----------------------------------------------------
+        return torch.cat(fused_heads, dim=-1)

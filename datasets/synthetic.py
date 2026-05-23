@@ -23,22 +23,37 @@ from .base_dataset import BaseMultimodalDataset
 class SyntheticMultimodalDataset(BaseMultimodalDataset):
     """Synthetic dataset that mimics RECOLA/SEWA structure."""
 
-    def __init__(self, length=5000, T=50, S=10, seed=42):
+    def __init__(self, cfg, split="train", seed=42):
         """
         Parameters
         ----------
-        length : int
-            Number of samples in the dataset.
-        T : int
-            History window length.
-        S : int
-            Forecasting horizon.
+        cfg : dict
+            Global config.
+        split : str
+            "train" or "val".
         seed : int
             Random seed for reproducibility.
         """
+        T = cfg["dataset"]["T"]
+        S = cfg["dataset"]["S"]
+        length = cfg["dataset"]["length"]
+
         super().__init__(T=T, S=S)
 
-        self.length = length
+        # 80/20 split
+        if split == "train":
+            self.size = int(length * 0.8)
+            self.offset = 0
+        elif split == "val":
+            self.size = length - int(length * 0.8)
+            self.offset = int(length * 0.8)
+        else:
+            raise ValueError("split must be 'train' or 'val'")
+
+        self.split = split
+        self.T = T
+        self.S = S
+
         rng = np.random.default_rng(seed)
 
         # Latent emotional trajectory (VA)
@@ -51,7 +66,7 @@ class SyntheticMultimodalDataset(BaseMultimodalDataset):
         self.W_eda   = rng.normal(0, 0.1, size=(2, 128)).astype(np.float32)
 
     def __len__(self):
-        return self.length
+        return self.size
 
     def __getitem__(self, idx):
         """
@@ -62,10 +77,15 @@ class SyntheticMultimodalDataset(BaseMultimodalDataset):
         dict
             Dictionary containing modality embeddings and VA labels.
         """
-        # Extract VA history, current VA, and future VA
-        va_hist = self.latent[idx : idx + self.T]                      # (T,2)
-        va_now  = self.latent[idx + self.T]                            # (2,)
-        va_fut  = self.latent[idx + self.T + 1 : idx + self.T + 1 + self.S]  # (S,2)
+        idx = idx + self.offset  # shift for val split
+
+        T = self.T
+        S = self.S
+
+        # Extract VA history, recognition target, and forecasting target
+        va_hist = self.latent[idx : idx + T]                      # (T,2)
+        va_rec  = self.latent[idx + T]                            # (2,)
+        va_fut  = self.latent[idx + T + 1 : idx + T + 1 + S]      # (S,2)
 
         # Generate modality embeddings
         audio = va_hist @ self.W_audio
@@ -74,11 +94,12 @@ class SyntheticMultimodalDataset(BaseMultimodalDataset):
         eda   = va_hist @ self.W_eda
 
         return {
-            "audio":   torch.tensor(audio, dtype=torch.float32),
-            "video":   torch.tensor(video, dtype=torch.float32),
-            "ecg":     torch.tensor(ecg, dtype=torch.float32),
-            "eda":     torch.tensor(eda, dtype=torch.float32),
-            "va_hist": torch.tensor(va_hist, dtype=torch.float32),
-            "va_now":  torch.tensor(va_now, dtype=torch.float32),
-            "va_fut":  torch.tensor(va_fut, dtype=torch.float32),
+            "audio":   torch.tensor(audio, dtype=torch.float32),      # (T,128)
+            "video":   torch.tensor(video, dtype=torch.float32),      # (T,128)
+            "ecg":     torch.tensor(ecg, dtype=torch.float32),        # (T,128)
+            "eda":     torch.tensor(eda, dtype=torch.float32),        # (T,128)
+
+            "va_hist": torch.tensor(va_hist, dtype=torch.float32),    # (T,2)
+            "va_rec":  torch.tensor(va_rec, dtype=torch.float32),     # (2,)
+            "va_fut":  torch.tensor(va_fut, dtype=torch.float32),     # (S,2)
         }

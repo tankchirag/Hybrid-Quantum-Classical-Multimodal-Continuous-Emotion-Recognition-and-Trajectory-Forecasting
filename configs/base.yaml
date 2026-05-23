@@ -26,6 +26,6 @@ model:
 
 training:
   batch_size: 16
-  lr: 1e-4
-  epochs: 5
-  device: "cuda"
+  lr: 0.0001
+  epochs: 2
+  device: "auto"

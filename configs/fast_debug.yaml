@@ -1,0 +1,35 @@
+debug_mode: true
+
+dataset:
+  name: synthetic
+  length: 20        # reduced from 5000
+  T: 10             # reduced from 50
+  S: 3              # reduced from 10
+
+model:
+  modality_dim: 128
+  num_modalities: 4
+
+  fusion:
+    type: qsal
+    fusion_dim: 32          # reduced from 64
+    num_heads: 1            # reduced from 2
+    num_qubits: 2           # reduced from 4
+    circuit_depth: 1        # reduced from 2
+    transformer_dim: 64     # reduced from 256
+
+  transformer:
+    d_model: 64             # reduced from 256
+    nhead: 2                # reduced from 4
+    num_encoder_layers: 1   # reduced from 4
+    num_decoder_layers: 1   # reduced from 4
+    dim_feedforward: 128    # reduced from 512
+    dropout: 0.1
+
+training:
+  batch_size: 2
+  lr: 0.0001
+  epochs: 10
+  device: "cuda"
+  use_tqdm: true
+  time_batches: true
