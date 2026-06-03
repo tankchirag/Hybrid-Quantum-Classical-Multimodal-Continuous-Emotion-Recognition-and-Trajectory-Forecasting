@@ -1,147 +1,89 @@
-"""
-Modality Tokenizer Module
-
-This module converts raw modality embeddings (audio, video, ECG, EDA)
-into modality-specific tokens suitable for fusion and QSAL processing.
-
-Each modality:
-    - Starts as a 128-dimensional embedding (from encoders)
-    - Passes through a modality-specific linear projection
-    - Receives a learned modality/type embedding
-    - Produces a final 128-dimensional token
-
-Output shape:
-    tokens: (B, T, M, 128)
-        B = batch size
-        T = sequence length (history window)
-        M = number of modalities (4: audio, video, ECG, EDA)
-"""
-
 import torch
 import torch.nn as nn
 
 
 class ModalityTokenizer(nn.Module):
     """
-    Tokenizes each modality into a unified 128-dimensional token space.
+    ModalityTokenizer
+    -----------------
+    Universal tokenizer for all baselines (B1/B2/B3) and QSAL.
 
-    This module is the bridge between modality-specific encoders
-    (wav2vec2, ResNet18, 1D CNNs) and the fusion/QSAL block.
+    Accepts a dictionary of modality embeddings:
+        {
+            "audio": (B, T, 128) or None,
+            "video": (B, T, 128) or None,
+            "ecg":   (B, T, 128) or None,
+            "eda":   (B, T, 128) or None,
+            "text":  (B, T, 128) or None
+        }
 
     Responsibilities:
-        - Apply a learnable linear projection per modality
-        - Inject a learned modality/type embedding
-        - Preserve temporal structure (B, T, ·)
-        - Stack modalities along a dedicated modality axis (M)
+        - Apply a learnable projection per modality
+        - Add a learned modality/type embedding
+        - Stack modalities into (B, T, M, D)
+        - Support variable modality sets (RECOLA vs SEWA)
+        - Support QSAL (which requires dict-based input)
+
+    Output:
+        tokens: (B, T, M, D)
     """
 
-    def __init__(self, modality_dim: int = 128,
-                 num_modalities: int = 4,
-                 dropout: float = 0.1) -> None:
-        """
-        Parameters
-        ----------
-        modality_dim : int
-            Dimensionality of each modality embedding (default: 128).
-        num_modalities : int
-            Number of modalities (audio, video, ECG, EDA).
-        dropout : float
-            Dropout applied after projection and type embedding.
-        """
+    def __init__(self, emb_dim: int = 128, num_modalities: int = 5, dropout: float = 0.1):
         super().__init__()
 
-        self.modality_dim = modality_dim
+        self.emb_dim = emb_dim
         self.num_modalities = num_modalities
 
-        # ------------------------------------------------------------------
-        # 1. Linear projection for each modality
-        #    - Each modality has its own learnable projection:
-        #          R^{128} → R^{128}
-        #    - This allows slight modality-specific adaptation while
-        #      keeping a common dimensionality.
-        # ------------------------------------------------------------------
+        # One projection per modality
         self.projections = nn.ModuleList([
-            nn.Linear(modality_dim, modality_dim)
-            for _ in range(num_modalities)
+            nn.Linear(emb_dim, emb_dim) for _ in range(num_modalities)
         ])
 
-        # ------------------------------------------------------------------
-        # 2. Modality type embeddings (learned)
-        #    - Shape: (M, 128)
-        #    - Each modality gets a learned embedding vector that acts
-        #      as a "type token", similar to segment/type embeddings
-        #      in BERT.
-        # ------------------------------------------------------------------
+        # One learned modality embedding per modality
         self.modality_embeddings = nn.Parameter(
-            torch.randn(num_modalities, modality_dim)
+            torch.randn(num_modalities, emb_dim)
         )
 
-        # ------------------------------------------------------------------
-        # 3. Dropout for regularization
-        # ------------------------------------------------------------------
         self.dropout = nn.Dropout(dropout)
 
-    def forward(self,
-                audio: torch.Tensor,
-                video: torch.Tensor,
-                ecg: torch.Tensor,
-                eda: torch.Tensor) -> torch.Tensor:
-        """
-        Tokenize all modalities into a unified token tensor.
+        # Fixed modality order (important for reproducibility)
+        self.modality_order = ["audio", "video", "ecg", "eda", "text"]
 
+    def forward(self, emb_dict):
+        """
         Parameters
         ----------
-        audio : Tensor
-            Shape (B, T, 128) — audio embeddings.
-        video : Tensor
-            Shape (B, T, 128) — video embeddings.
-        ecg : Tensor
-            Shape (B, T, 128) — ECG embeddings.
-        eda : Tensor
-            Shape (B, T, 128) — EDA embeddings.
+        emb_dict : dict
+            Dictionary of modality embeddings.
 
         Returns
         -------
         tokens : Tensor
-            Shape (B, T, M, 128), where:
-                B = batch size
-                T = sequence length
-                M = number of modalities (4)
-            This tensor is ready to be consumed by the fusion/QSAL module.
+            Shape (B, T, M, D)
         """
-        # List of modality tensors in fixed order
-        modalities = [audio, video, ecg, eda]
+
         token_list = []
+        proj_index = 0
 
-        # ------------------------------------------------------------------
-        # Process each modality independently:
-        #   1. Apply modality-specific linear projection
-        #   2. Add learned modality/type embedding
-        #   3. Apply dropout
-        # ------------------------------------------------------------------
-        for i, x in enumerate(modalities):
-            # x: (B, T, 128)
-            proj = self.projections[i](x)  # (B, T, 128)
+        for key in self.modality_order:
+            emb = emb_dict.get(key, None)
 
-            # Modality/type embedding:
-            #   self.modality_embeddings[i] has shape (128,)
-            #   We reshape to (1, 1, 128) so it broadcasts correctly
-            #   over both batch (B) and time (T) dimensions.
-            type_emb = self.modality_embeddings[i].view(1, 1, -1)
+            if emb is None:
+                continue  # skip missing modalities (e.g., RECOLA has no text)
 
-            # Add type embedding → still (B, T, 128)
+            # emb: (B, T, 128)
+            proj = self.projections[proj_index](emb)  # (B, T, 128)
+
+            # Add modality embedding
+            type_emb = self.modality_embeddings[proj_index].view(1, 1, -1)
             proj = proj + type_emb
 
-            # Regularization
             proj = self.dropout(proj)
 
             token_list.append(proj)
+            proj_index += 1
 
-        # ------------------------------------------------------------------
-        # Stack along a new modality axis:
-        #   token_list: list of 4 tensors, each (B, T, 128)
-        #   tokens: (B, T, M, 128)
-        # ------------------------------------------------------------------
+        # Stack into (B, T, M, 128)
         tokens = torch.stack(token_list, dim=2)
 
         return tokens

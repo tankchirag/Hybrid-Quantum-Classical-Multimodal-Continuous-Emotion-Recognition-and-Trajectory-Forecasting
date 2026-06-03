@@ -1,218 +1,166 @@
 """
-Trainer Module (FAST DEBUG MODE)
+Universal Trainer for:
+    - Baseline B1 (Classical Fusion)
+    - QSAL (Quantum Self-Attention Layer)
+    - Hybrid Models
 
-Enhancements over the standard trainer:
-    - tqdm progress bars for training and validation
-    - Per-batch timing logs
-    - Per-epoch timing logs
-    - Debug-friendly printouts
-    - No change to scientific architecture or loss logic
-
-This preserves the thesis-correct behavior:
-    Recognition:
-        rec_pred_seq : (B, T, 2)
-        rec_pred     : last time step → (B, 2)
-
-    Forecasting:
-        for_pred     : (B, S, 2)
+Features:
+    - tqdm progress bars
+    - per-batch timing
+    - per-epoch timing
+    - early stopping
+    - checkpoint saving
+    - supports both model output formats:
+        * Baseline B1: {"va_pred": (B,T,2), "va_future": (B,S,2)}
+        * QSAL: (rec_pred_seq, for_pred)
 """
 
 import time
 import torch
+import torch.nn as nn
 from tqdm import tqdm
-from training.losses import total_loss
 
 
 class Trainer:
-    """
-    Trainer class for multimodal quantum-classical emotion recognition
-    and trajectory forecasting.
-
-    Parameters
-    ----------
-    model : nn.Module
-        The multimodal QSAL + Transformer model.
-    optimizer : torch.optim.Optimizer
-        Optimizer for training.
-    device : str
-        "cuda" or "cpu".
-    patience : int
-        Early stopping patience.
-    debug_mode : bool
-        If True → enables progress bars + timing logs.
-    """
-
-    def __init__(self, model, optimizer, device="cpu", patience=5, debug_mode=True):
+    def __init__(
+        self,
+        model,
+        optimizer,
+        device="cpu",
+        patience=5,
+        save_path=None,
+        use_tqdm=True,
+        log_batches=False,
+    ):
         self.model = model.to(device)
         self.optimizer = optimizer
         self.device = device
         self.patience = patience
-        self.debug_mode = debug_mode
+        self.save_path = save_path
+        self.use_tqdm = use_tqdm
+        self.log_batches = log_batches
 
-        # Early stopping state
+        self.criterion = nn.MSELoss()
+
         self.best_val_loss = float("inf")
-        self.early_stop_counter = 0
-
-        # Logging
-        self.train_history = []
-        self.val_history = []
+        self.wait = 0  # early stopping counter
 
     # ---------------------------------------------------------
-    # TRAINING EPOCH
+    # TRAIN ONE EPOCH
     # ---------------------------------------------------------
-    def train_epoch(self, dataloader):
-        """
-        One full training epoch.
-
-        Debug mode adds:
-            - tqdm progress bar
-            - per-batch timing
-            - per-epoch timing
-        """
+    def train_one_epoch(self, train_loader, epoch, total_epochs):
         self.model.train()
-        total = 0.0
 
-        epoch_start = time.time()
+        total_loss = 0
+        total_rec = 0
+        total_fore = 0
+        batches = 0
 
-        iterator = (
-            tqdm(dataloader, desc="Training", ncols=100)
-            if self.debug_mode
-            else dataloader
-        )
+        iterator = train_loader
+        if self.use_tqdm:
+            iterator = tqdm(train_loader, desc=f"Epoch {epoch}/{total_epochs} | Train")
 
         for batch in iterator:
             batch_start = time.time()
 
-            # Move batch to device
-            batch = {k: v.to(self.device) for k, v in batch.items()}
+            batch = {
+                k: (v.to(self.device) if torch.is_tensor(v) else v)
+                for k, v in batch.items()
+            }
 
-            # Forward pass
-            rec_pred_seq, for_pred = self.model(batch)
-
-            # Recognition: last time step
-            rec_pred = rec_pred_seq[:, -1, :]
-            rec_true = batch["va_rec"]
-
-            # Forecasting: full sequence
-            for_true = batch["va_fut"]
-
-            # Combined loss
-            loss = total_loss(
-                rec_pred=rec_pred,
-                rec_true=rec_true,
-                for_pred=for_pred,
-                for_true=for_true,
-                alpha=0.2,
-                lambda_for=1.0,
-            )
-
-            # Backprop
             self.optimizer.zero_grad()
+
+            outputs = self.model(batch)
+
+            # ---------------------------------------------
+            # SUPPORT BOTH MODEL OUTPUT FORMATS
+            # ---------------------------------------------
+            if isinstance(outputs, dict):
+                # Baseline B1 format
+                va_pred = outputs["va_pred"]          # (B,T,2)
+                va_future_pred = outputs["va_future"] # (B,S,2)
+            else:
+                # QSAL format
+                rec_pred_seq, va_future_pred = outputs
+                va_pred = rec_pred_seq                # (B,T,2)
+
+            rec_loss = self.criterion(va_pred, batch["va_hist"])
+            fore_loss = self.criterion(va_future_pred, batch["va_future"])
+            loss = rec_loss + fore_loss
+
             loss.backward()
-
-            # Gradient clipping
             torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
-
             self.optimizer.step()
 
-            total += loss.item()
+            total_loss += loss.item()
+            total_rec += rec_loss.item()
+            total_fore += fore_loss.item()
+            batches += 1
 
-            # Debug timing
-            if self.debug_mode:
-                batch_time = time.time() - batch_start
+            if self.log_batches and self.use_tqdm:
                 iterator.set_postfix({
-                    "batch_time": f"{batch_time:.3f}s",
-                    "loss": f"{loss.item():.4f}"
+                    "loss": f"{loss.item():.4f}",
+                    "batch_time": f"{time.time() - batch_start:.3f}s"
                 })
 
-        epoch_time = time.time() - epoch_start
-        if self.debug_mode:
-            print(f"Epoch train time: {epoch_time:.2f}s")
-
-        avg = total / len(dataloader)
-        self.train_history.append(avg)
-        return avg
+        return {
+            "loss": total_loss / batches,
+            "rec_loss": total_rec / batches,
+            "fore_loss": total_fore / batches,
+        }
 
     # ---------------------------------------------------------
-    # VALIDATION EPOCH
+    # VALIDATION
     # ---------------------------------------------------------
     @torch.no_grad()
-    def eval_epoch(self, dataloader):
-        """
-        One full validation epoch.
-
-        Debug mode adds:
-            - tqdm progress bar
-            - per-epoch timing
-        """
+    def eval_one_epoch(self, val_loader, epoch, total_epochs):
         self.model.eval()
-        total = 0.0
 
-        epoch_start = time.time()
+        total_loss = 0
+        total_rec = 0
+        total_fore = 0
+        batches = 0
 
-        iterator = (
-            tqdm(dataloader, desc="Validation", ncols=100)
-            if self.debug_mode
-            else dataloader
-        )
+        iterator = val_loader
+        if self.use_tqdm:
+            iterator = tqdm(val_loader, desc=f"Epoch {epoch}/{total_epochs} | Val")
 
         for batch in iterator:
-            batch = {k: v.to(self.device) for k, v in batch.items()}
+            batch = {
+                k: (v.to(self.device) if torch.is_tensor(v) else v)
+                for k, v in batch.items()
+            }
 
-            rec_pred_seq, for_pred = self.model(batch)
+            outputs = self.model(batch)
 
-            # Recognition: last time step
-            rec_pred = rec_pred_seq[:, -1, :]
-            rec_true = batch["va_rec"]
-
-            # Forecasting: full sequence
-            for_true = batch["va_fut"]
-
-            loss = total_loss(
-                rec_pred=rec_pred,
-                rec_true=rec_true,
-                for_pred=for_pred,
-                for_true=for_true,
-                alpha=0.2,
-                lambda_for=1.0,
-            )
-
-            total += loss.item()
-
-        epoch_time = time.time() - epoch_start
-        if self.debug_mode:
-            print(f"Epoch val time: {epoch_time:.2f}s")
-
-        avg = total / len(dataloader)
-        self.val_history.append(avg)
-        return avg
-
-    # ---------------------------------------------------------
-    # FIT LOOP WITH EARLY STOPPING
-    # ---------------------------------------------------------
-    def fit(self, train_loader, val_loader, epochs=20):
-        """
-        Full training loop with early stopping.
-
-        Saves best model to:
-            best_model.pt
-        """
-        for epoch in range(epochs):
-            print(f"\n===== Epoch {epoch+1}/{epochs} =====")
-
-            train_loss = self.train_epoch(train_loader)
-            val_loss = self.eval_epoch(val_loader)
-
-            print(f"Train: {train_loss:.4f} | Val: {val_loss:.4f}")
-
-            # Early stopping logic
-            if val_loss < self.best_val_loss:
-                self.best_val_loss = val_loss
-                self.early_stop_counter = 0
-                torch.save(self.model.state_dict(), "best_model.pt")
+            if isinstance(outputs, dict):
+                va_pred = outputs["va_pred"]
+                va_future_pred = outputs["va_future"]
             else:
-                self.early_stop_counter += 1
+                rec_pred_seq, va_future_pred = outputs
+                va_pred = rec_pred_seq
 
-            if self.early_stop_counter >= self.patience:
-                print("Early stopping triggered.")
-                break
+            rec_loss = self.criterion(va_pred, batch["va_hist"])
+            fore_loss = self.criterion(va_future_pred, batch["va_future"])
+            loss = rec_loss + fore_loss
+
+            total_loss += loss.item()
+            total_rec += rec_loss.item()
+            total_fore += fore_loss.item()
+            batches += 1
+
+        # EARLY STOPPING + CHECKPOINT
+        if total_loss < self.best_val_loss:
+            self.best_val_loss = total_loss
+            self.wait = 0
+
+            if self.save_path is not None:
+                torch.save(self.model.state_dict(), self.save_path)
+        else:
+            self.wait += 1
+
+        return {
+            "loss": total_loss / batches,
+            "rec_loss": total_rec / batches,
+            "fore_loss": total_fore / batches,
+        }
