@@ -10,10 +10,12 @@ torchvision==0.16.0+cu121
 torchaudio==2.1.0+cu121
 
 # Quantum stack
-pennylane==0.34
+pennylane==0.36
 
 # Utilities
 tqdm==4.66.1
 pyyaml==6.0.1
 requests==2.31.0
 PyPDF2==3.0.1
+reportlab==4.0.9
+transformers==4.40.0
