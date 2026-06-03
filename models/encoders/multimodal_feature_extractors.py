@@ -148,7 +148,7 @@ class MultimodalFeatureExtractors(nn.Module):
             outputs["eda"] = None
 
         # Text (optional)
-        if self.include_text and "text" in batch:
+        if batch["text"] is not None:
             outputs["text"] = self.text_encoder(batch["text"])
         else:
             outputs["text"] = None

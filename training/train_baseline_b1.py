@@ -27,9 +27,12 @@ if ROOT not in sys.path:
     sys.path.append(ROOT)
 
 from utils.config import load_config
-from datasets.synthetic import SyntheticMultimodalDataset
 from models.wrappers.baseline_b1 import BaselineB1
 from training.trainer import Trainer
+
+# NEW IMPORTS FOR REAL DATA
+from datasets.unified_multimodal_dataset import UnifiedMultimodalDataset
+from datasets.collate_fn import multimodal_collate_fn
 
 
 # ---------------------------------------------------------
@@ -62,7 +65,6 @@ def select_device(cfg_device: str):
 
     # AUTO MODE (safe)
     try:
-        # Attempt to initialize CUDA driver
         _ = torch.cuda.device_count()
         return torch.device("cuda")
     except Exception:
@@ -97,20 +99,25 @@ def main():
     print(f"[INFO] Run directory: {run_dir}")
 
     # ---------------------------------------------------------
-    # DATASETS
+    # DATASETS (REAL MODE)
     # ---------------------------------------------------------
-    train_set = SyntheticMultimodalDataset(cfg, split="train")
-    val_set = SyntheticMultimodalDataset(cfg, split="val")
+    dataset_name = cfg["dataset"].get("name", "recola")
+
+    train_set = UnifiedMultimodalDataset(dataset_name=dataset_name)
+    val_set   = UnifiedMultimodalDataset(dataset_name=dataset_name)
 
     train_loader = DataLoader(
         train_set,
         batch_size=cfg["training"]["batch_size"],
-        shuffle=True
+        shuffle=True,
+        collate_fn=multimodal_collate_fn,
     )
 
     val_loader = DataLoader(
         val_set,
-        batch_size=cfg["training"]["batch_size"]
+        batch_size=cfg["training"]["batch_size"],
+        shuffle=False,
+        collate_fn=multimodal_collate_fn,
     )
 
     # ---------------------------------------------------------
@@ -124,7 +131,7 @@ def main():
         num_layers=cfg["model"]["num_layers"],
         target_seq_len=cfg["dataset"]["T"],
         forecast_horizon=cfg["dataset"]["S"],
-        synthetic=cfg["model"]["synthetic"],
+        synthetic=False,                     # REAL MODE
         include_text=cfg["model"]["include_text"],
     ).to(device)
 

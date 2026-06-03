@@ -10,14 +10,15 @@ class UnifiedMultimodalDataset(Dataset):
     ------------------------
     A single dataset class supporting both SEWA and RECOLA.
 
-    This class does NOT load real data yet.
-    It provides:
+    This class currently uses DUMMY DATA (placeholder tensors).
+    Real loading will be added later when dataset access is available.
+
+    Features:
         - dataset_name switch ("recola" or "sewa")
         - modality flags (audio/video/ecg/eda/text)
-        - placeholder loading functions
-        - unified output format for your model
-        - time-alignment skeleton
-        - ready-to-use API for training once data arrives
+        - unified output format for the model
+        - consistent raw-signal interface for all baselines + QSAL
+        - ready for real data integration
 
     Output format (raw signals):
         {
@@ -39,6 +40,9 @@ class UnifiedMultimodalDataset(Dataset):
     ):
         super().__init__()
 
+        # ---------------------------------------------------------
+        # Dataset selection
+        # ---------------------------------------------------------
         assert dataset_name in ["recola", "sewa"], \
             "dataset_name must be 'recola' or 'sewa'"
 
@@ -48,23 +52,25 @@ class UnifiedMultimodalDataset(Dataset):
         self.forecast_horizon = forecast_horizon
 
         # ---------------------------------------------------------
-        # Modality flags
+        # Modality flags based on dataset
         # ---------------------------------------------------------
         if dataset_name == "recola":
             self.has_audio = True
             self.has_video = True
             self.has_ecg = True
             self.has_eda = True
-            self.has_text = False
+            self.has_text = False   # RECOLA has no text
 
         elif dataset_name == "sewa":
             self.has_audio = True
             self.has_video = True
             self.has_ecg = False
             self.has_eda = False
-            self.has_text = True
+            self.has_text = True    # SEWA has text
 
-        # Placeholder: pretend we have 100 samples
+        # ---------------------------------------------------------
+        # Placeholder dataset size
+        # ---------------------------------------------------------
         self.num_samples = 100
 
     # -------------------------------------------------------------
@@ -76,48 +82,39 @@ class UnifiedMultimodalDataset(Dataset):
     def __getitem__(self, idx):
         """
         Returns a dictionary of raw signals for one sample.
-        Real loading will be added later.
+        Currently returns dummy tensors for architecture validation.
         """
 
         sample = {}
 
         # ---------------------------------------------------------
-        # AUDIO (dummy)
+        # AUDIO (dummy waveform)
         # ---------------------------------------------------------
         if self.has_audio:
-            L_audio = 16000 * 4  # 4 seconds dummy
+            L_audio = 16000 * 4  # 4 seconds @ 16 kHz
             sample["audio"] = torch.randn(L_audio)
 
         # ---------------------------------------------------------
-        # VIDEO (dummy)
+        # VIDEO (dummy frames)
         # ---------------------------------------------------------
         if self.has_video:
             T = self.target_seq_len
             sample["video"] = torch.randn(T, 3, 112, 112)
 
         # ---------------------------------------------------------
-        # ECG (dummy)
+        # ECG (dummy or None)
         # ---------------------------------------------------------
-        if self.has_ecg:
-            sample["ecg"] = torch.randn(5000)
-        else:
-            sample["ecg"] = None
+        sample["ecg"] = torch.randn(5000) if self.has_ecg else None
 
         # ---------------------------------------------------------
-        # EDA (dummy)
+        # EDA (dummy or None)
         # ---------------------------------------------------------
-        if self.has_eda:
-            sample["eda"] = torch.randn(5000)
-        else:
-            sample["eda"] = None
+        sample["eda"] = torch.randn(5000) if self.has_eda else None
 
         # ---------------------------------------------------------
-        # TEXT (dummy)
+        # TEXT (dummy or None)
         # ---------------------------------------------------------
-        if self.has_text:
-            sample["text"] = "hello world"
-        else:
-            sample["text"] = None
+        sample["text"] = "hello world" if self.has_text else None
 
         # ---------------------------------------------------------
         # VA LABELS (dummy)

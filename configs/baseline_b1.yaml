@@ -1,17 +1,17 @@
 dataset:
-  name: synthetic
+  name: recola
   length: 5000        # realistic dataset size
   T: 100              # 4 seconds @ 25 FPS (video) or 100 audio frames
   S: 20               # 1–2 second forecasting horizon
 
 model:
-  emb_dim: 256        # realistic embedding size (wav2vec2=768, ResNet=512 → projected to 256)
+  emb_dim: 128        # realistic embedding size (wav2vec2=768, ResNet=512 → projected to 256)
   fusion_dim: 128     # realistic fusion bottleneck
   transformer_dim: 512
   num_heads: 8        # standard for 512-dim transformer
   num_layers: 4       # deep enough for thesis-level modeling
   include_text: true
-  synthetic: true
+  synthetic: false
 
 training:
   batch_size: 16      # GPU-friendly
