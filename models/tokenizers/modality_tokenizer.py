@@ -6,9 +6,14 @@ class ModalityTokenizer(nn.Module):
     """
     ModalityTokenizer
     -----------------
-    Universal tokenizer for all baselines (B1/B2/B3) and QSAL.
+    Tokenizes modality-specific embeddings into a unified token space.
 
-    Accepts a dictionary of modality embeddings:
+    This module is used by:
+        - Baseline B1 (classical fusion)
+        - Baseline B2/B3
+        - QSAL (quantum self-attention layer)
+
+    It accepts a dictionary of modality embeddings:
         {
             "audio": (B, T, 128) or None,
             "video": (B, T, 128) or None,
@@ -18,14 +23,14 @@ class ModalityTokenizer(nn.Module):
         }
 
     Responsibilities:
-        - Apply a learnable projection per modality
+        - Apply a learnable projection per modality (128 → 128)
         - Add a learned modality/type embedding
-        - Stack modalities into (B, T, M, D)
+        - Stack all modality tokens into shape (B, T, M, 128)
         - Support variable modality sets (RECOLA vs SEWA)
-        - Support QSAL (which requires dict-based input)
+        - Maintain fixed modality ordering for reproducibility
 
     Output:
-        tokens: (B, T, M, D)
+        tokens: Tensor of shape (B, T, M, 128)
     """
 
     def __init__(self, emb_dim: int = 128, num_modalities: int = 5, dropout: float = 0.1):
@@ -34,7 +39,10 @@ class ModalityTokenizer(nn.Module):
         self.emb_dim = emb_dim
         self.num_modalities = num_modalities
 
-        # One projection per modality
+        # Fixed modality order (important for reproducibility)
+        self.modality_order = ["audio", "video", "ecg", "eda", "text"]
+
+        # One projection per modality: 128 → 128
         self.projections = nn.ModuleList([
             nn.Linear(emb_dim, emb_dim) for _ in range(num_modalities)
         ])
@@ -46,20 +54,17 @@ class ModalityTokenizer(nn.Module):
 
         self.dropout = nn.Dropout(dropout)
 
-        # Fixed modality order (important for reproducibility)
-        self.modality_order = ["audio", "video", "ecg", "eda", "text"]
-
     def forward(self, emb_dict):
         """
         Parameters
         ----------
         emb_dict : dict
-            Dictionary of modality embeddings.
+            Dictionary mapping modality names to embeddings of shape (B, T, 128).
 
         Returns
         -------
         tokens : Tensor
-            Shape (B, T, M, D)
+            Stacked modality tokens of shape (B, T, M, 128)
         """
 
         token_list = []
@@ -74,7 +79,7 @@ class ModalityTokenizer(nn.Module):
             # emb: (B, T, 128)
             proj = self.projections[proj_index](emb)  # (B, T, 128)
 
-            # Add modality embedding
+            # Add modality/type embedding
             type_emb = self.modality_embeddings[proj_index].view(1, 1, -1)
             proj = proj + type_emb
 
