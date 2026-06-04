@@ -8,22 +8,18 @@ class UnifiedMultimodalDataset(Dataset):
     """
     UnifiedMultimodalDataset
     ------------------------
-    A single dataset class supporting both SEWA and RECOLA.
+    A unified dataset wrapper for SEWA and RECOLA.
 
-    This class currently uses DUMMY DATA (placeholder tensors).
-    Real loading will be added later when dataset access is available.
-
-    Features:
-        - dataset_name switch ("recola" or "sewa")
-        - modality flags (audio/video/ecg/eda/text)
-        - unified output format for the model
-        - consistent raw-signal interface for all baselines + QSAL
-        - ready for real data integration
+    This version provides:
+        - Automatic modality flags (audio/video/ecg/eda/text)
+        - A consistent raw-signal interface for all baselines
+        - Dummy tensors for architecture validation
+        - Real data can be plugged in later without changing the model
 
     Output format (raw signals):
         {
-            "audio": Tensor(L_audio),
-            "video": Tensor(T, 3, H, W),
+            "audio": Tensor(L_audio) or None,
+            "video": Tensor(T, 3, H, W) or None,
             "ecg":   Tensor(L_ecg) or None,
             "eda":   Tensor(L_eda) or None,
             "text":  str or None,
@@ -40,9 +36,7 @@ class UnifiedMultimodalDataset(Dataset):
     ):
         super().__init__()
 
-        # ---------------------------------------------------------
-        # Dataset selection
-        # ---------------------------------------------------------
+        dataset_name = dataset_name.lower()
         assert dataset_name in ["recola", "sewa"], \
             "dataset_name must be 'recola' or 'sewa'"
 
@@ -52,24 +46,28 @@ class UnifiedMultimodalDataset(Dataset):
         self.forecast_horizon = forecast_horizon
 
         # ---------------------------------------------------------
-        # Modality flags based on dataset
+        # Automatic modality flags (truth table)
         # ---------------------------------------------------------
         if dataset_name == "recola":
-            self.has_audio = True
-            self.has_video = True
-            self.has_ecg = True
-            self.has_eda = True
-            self.has_text = False   # RECOLA has no text
+            self.modalities = {
+                "audio": True,
+                "video": True,
+                "ecg":   True,
+                "eda":   True,
+                "text":  False,   # RECOLA has no text
+            }
 
         elif dataset_name == "sewa":
-            self.has_audio = True
-            self.has_video = True
-            self.has_ecg = False
-            self.has_eda = False
-            self.has_text = True    # SEWA has text
+            self.modalities = {
+                "audio": True,
+                "video": True,
+                "ecg":   False,
+                "eda":   False,
+                "text":  True,    # SEWA has text
+            }
 
         # ---------------------------------------------------------
-        # Placeholder dataset size
+        # Placeholder dataset size (dummy mode)
         # ---------------------------------------------------------
         self.num_samples = 100
 
@@ -87,38 +85,30 @@ class UnifiedMultimodalDataset(Dataset):
 
         sample = {}
 
-        # ---------------------------------------------------------
-        # AUDIO (dummy waveform)
-        # ---------------------------------------------------------
-        if self.has_audio:
+        # AUDIO
+        if self.modalities["audio"]:
             L_audio = 16000 * 4  # 4 seconds @ 16 kHz
             sample["audio"] = torch.randn(L_audio)
+        else:
+            sample["audio"] = None
 
-        # ---------------------------------------------------------
-        # VIDEO (dummy frames)
-        # ---------------------------------------------------------
-        if self.has_video:
+        # VIDEO
+        if self.modalities["video"]:
             T = self.target_seq_len
             sample["video"] = torch.randn(T, 3, 112, 112)
+        else:
+            sample["video"] = None
 
-        # ---------------------------------------------------------
-        # ECG (dummy or None)
-        # ---------------------------------------------------------
-        sample["ecg"] = torch.randn(5000) if self.has_ecg else None
+        # ECG
+        sample["ecg"] = torch.randn(5000) if self.modalities["ecg"] else None
 
-        # ---------------------------------------------------------
-        # EDA (dummy or None)
-        # ---------------------------------------------------------
-        sample["eda"] = torch.randn(5000) if self.has_eda else None
+        # EDA
+        sample["eda"] = torch.randn(5000) if self.modalities["eda"] else None
 
-        # ---------------------------------------------------------
-        # TEXT (dummy or None)
-        # ---------------------------------------------------------
-        sample["text"] = "hello world" if self.has_text else None
+        # TEXT
+        sample["text"] = "hello world" if self.modalities["text"] else None
 
-        # ---------------------------------------------------------
-        # VA LABELS (dummy)
-        # ---------------------------------------------------------
+        # VA LABELS
         T = self.target_seq_len
         sample["va"] = torch.randn(T, 2)
 

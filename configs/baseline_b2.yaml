@@ -1,0 +1,24 @@
+dataset:
+  name: sewa
+  length: 5000        # optional; only used if your dataset class reads it
+  T: 100              # 4 seconds @ 25 FPS (video) or 100 audio frames
+  S: 20               # 1–2 second forecasting horizon
+
+model:
+  name: baseline_b2
+  emb_dim: 128
+  proj_dim: 64
+  transformer_dim: 256
+  num_heads: 2
+  num_layers: 2
+  target_seq_len: 50      # used to configure feature extractors / dummy video length
+  forecast_horizon: 10    # used by TransformerED and forecasting head
+  synthetic: false        # real mode; feature extractors use real encoders
+  # include_text:          # REMOVED – now inferred from dataset.modalities
+
+training:
+  batch_size: 16          # GPU-friendly
+  lr: 0.0001
+  epochs: 3
+  device: auto
+  patience: 3
