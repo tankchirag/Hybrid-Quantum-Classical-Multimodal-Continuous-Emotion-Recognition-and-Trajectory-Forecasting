@@ -1,0 +1,60 @@
+# ============================================================
+# Baseline B3 — Multimodal Entangled PQC Fusion
+# ============================================================
+
+model:
+  name: baseline_b3
+  fusion_type: baseline_b3
+
+  # ----------------------------------------------------------
+  # Modalities (RECOLA = 4, SEWA = 3)
+  # ----------------------------------------------------------
+  modalities: ["audio", "video", "ecg", "eda"]
+  dataset: "recola"     # change to "sewa" automatically enables null-slot
+
+  # ----------------------------------------------------------
+  # PQC configuration (matches thesis exactly)
+  # ----------------------------------------------------------
+  pqc:
+    num_qubits: 4
+    depth: 3
+    encoding: "ry"          # classical → quantum encoding
+    entanglement: "ring"    # CNOT ring: 0→1→2→3→0
+    measurement: "z"        # Pauli-Z expectation
+
+  # ----------------------------------------------------------
+  # Projection dimensions (fixed by architecture)
+  # ----------------------------------------------------------
+  proj_dim_per_modality: 16     # 128 → 16
+  fused_dim: 64                 # 4 × 16
+  angle_dim: 4                  # 64 → 4
+  transformer_input_dim: 256    # 4 → 256
+
+# ============================================================
+# Training settings (same as B1/B2 for fairness)
+# ============================================================
+training:
+  batch_size: 4
+  num_workers: 4
+  max_epochs: 50
+  learning_rate: 1e-4
+  weight_decay: 1e-5
+  grad_clip: 1.0
+
+# ============================================================
+# Dataset settings (identical to B1/B2)
+# ============================================================
+data:
+  root: "data/"
+  seq_length: 300          # T
+  forecast_horizon: 50     # S
+  sampling_rate: 25        # Hz
+  synthetic: false
+
+# ============================================================
+# Logging / checkpointing
+# ============================================================
+logging:
+  save_every: 1
+  log_every: 10
+  checkpoint_dir: "runs/baseline_b3/"
