@@ -1,60 +1,37 @@
 # ============================================================
-# Baseline B3 — Multimodal Entangled PQC Fusion
+# Baseline B3 — Multimodal Entangled PQC Fusion (Unified 4Q/6Q/8Q)
 # ============================================================
+
+dataset:
+  name: recola          # or "sewa"
+  T: 300                # sequence length
+  S: 50                 # forecasting horizon
 
 model:
   name: baseline_b3
-  fusion_type: baseline_b3
 
-  # ----------------------------------------------------------
-  # Modalities (RECOLA = 4, SEWA = 3)
-  # ----------------------------------------------------------
-  modalities: ["audio", "video", "ecg", "eda"]
-  dataset: "recola"     # change to "sewa" automatically enables null-slot
+  # Feature extractor output dim
+  emb_dim: 128
 
-  # ----------------------------------------------------------
-  # PQC configuration (matches thesis exactly)
-  # ----------------------------------------------------------
+  # PQC fusion parameters (classical side)
+  proj_dim: 16              # 128 → 16 per modality
+  fused_dim: 64             # 4 × 16
+  transformer_dim: 256      # PQC output → transformer input
+
+  num_heads: 2
+  num_layers: 2
+
+  # PQC configuration (Unified PQC)
   pqc:
-    num_qubits: 4
-    depth: 3
-    encoding: "ry"          # classical → quantum encoding
-    entanglement: "ring"    # CNOT ring: 0→1→2→3→0
-    measurement: "z"        # Pauli-Z expectation
+    num_qubits: 8           # choose: 4, 6, or 8
+    depth: 3                # PQC layers
 
-  # ----------------------------------------------------------
-  # Projection dimensions (fixed by architecture)
-  # ----------------------------------------------------------
-  proj_dim_per_modality: 16     # 128 → 16
-  fused_dim: 64                 # 4 × 16
-  angle_dim: 4                  # 64 → 4
-  transformer_input_dim: 256    # 4 → 256
-
-# ============================================================
-# Training settings (same as B1/B2 for fairness)
-# ============================================================
 training:
   batch_size: 4
-  num_workers: 4
-  max_epochs: 50
-  learning_rate: 1e-4
-  weight_decay: 1e-5
-  grad_clip: 1.0
+  lr: 0.0001
+  epochs: 2
+  patience: 3
+  device: cpu               # PQC uses lightning.qubit (CPU backend)
 
-# ============================================================
-# Dataset settings (identical to B1/B2)
-# ============================================================
-data:
-  root: "data/"
-  seq_length: 300          # T
-  forecast_horizon: 50     # S
-  sampling_rate: 25        # Hz
-  synthetic: false
-
-# ============================================================
-# Logging / checkpointing
-# ============================================================
 logging:
-  save_every: 1
-  log_every: 10
   checkpoint_dir: "runs/baseline_b3/"

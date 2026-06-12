@@ -17,6 +17,9 @@ __pycache__/
 venv/
 env/
 ENV/
+qenv/
+qenv310/
+
 
 # -------------------------
 # Jupyter Notebook
