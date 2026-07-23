@@ -1,0 +1,62 @@
+# ============================================================
+#  Proposed Method: QSAL (Quantum Self‑Attention Layer)
+#  Configuration aligned with Baseline B3 structure
+# ============================================================
+
+model:
+  name: "QSAL"
+
+  # Feature extractor output dim
+  emb_dim: 128
+
+  # Classical projection before QSAL
+  proj_dim: 64
+
+  # Transformer d_model
+  transformer_dim: 256
+
+  num_heads: 4
+  num_layers: 4
+
+  # Sequence length (RECOLA uses 300 frames @ 25 Hz)
+  target_seq_len: 50        # 300
+
+  modalities:
+    audio: true           # true
+    video: false          # true
+    ecg: false            # true
+    eda: false            # true
+    text: false           # true
+
+  qsal:
+    num_qubits: 2          # QSAL PQC qubits - 4
+    circuit_depth: 1       # PQC depth -2
+    fusion_dim: 64        # QSALFusion output dimension - 256
+    num_heads: 4           # Gaussian attention heads
+
+dataset:
+  name: "recola"
+  synthetic: false
+  S: 25                    # forecasting horizon (1 second @ 25 Hz)
+
+# training:
+#   batch_size: 4            # 4
+#   epochs: 1
+#   lr: 0.0003
+#   weight_decay: 0.0
+#   patience: 10
+#   device: "cpu"
+
+logging:
+  run_dir: "runs/qsal/"
+  log_interval: 20
+
+training:
+  batch_size: 1
+  epochs: 1
+  lr: 0.0003
+  weight_decay: 0.0
+  patience: 1
+  device: cpu
+
+

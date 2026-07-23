@@ -147,10 +147,13 @@ class MultimodalFeatureExtractors(nn.Module):
         else:
             outputs["eda"] = None
 
-        # Text (optional)
-        if batch["text"] is not None:
+        # TEXT (optional)
+        if self.include_text:
+            # batch["text"]: (B, T, 128)
             outputs["text"] = self.text_encoder(batch["text"])
         else:
-            outputs["text"] = None
+            # Always return zero embeddings for disabled text modality
+            B, T, _ = batch["text"].shape
+            outputs["text"] = torch.zeros(B, T, self.audio_encoder.emb_dim, device=batch["text"].device)
 
         return outputs
