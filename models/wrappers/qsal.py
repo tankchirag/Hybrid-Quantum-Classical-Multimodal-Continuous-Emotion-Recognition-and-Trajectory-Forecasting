@@ -1,23 +1,24 @@
+# models/wrappers/qsal.py
 """
-qsal.py
+QSAL Wrapper
+------------
 
 Proposed Method: QSAL (Quantum Self‑Attention Layer)
-----------------------------------------------------
 
-Hybrid quantum–classical multimodal architecture:
+This wrapper implements the full hybrid quantum–classical multimodal
+architecture described in your thesis:
 
-- Multimodal feature extraction
-- QSAL fusion (Quantum Self‑Attention Layer)
-- Transformer encoder–decoder
-- V/A recognition + forecasting heads
+    Step‑A: MultimodalFeatureExtractors
+    Step‑B: ModalityTokenizer + QSALFusion
+    Step‑C: Transformer Encoder–Decoder
+    Step‑D: Recognition + Forecasting Heads
 
-This wrapper mirrors Baseline B3 structurally, but replaces
-PQC fusion with QSALFusion.
-
-IMPORTANT:
-- Output format is a tuple (rec_pred_seq, for_pred), as expected by Trainer.
-- Aligned targets va_hist and va_future_gt are written into the batch
-  so Trainer can compute losses in QSAL mode.
+Key Features:
+    • Supports REAL + SYNTHETIC dataset modes
+    • Supports RECOLA (no text) + SEWA (raw text)
+    • Uses unified modality contract (B, T, 128)
+    • Produces aligned V/A history + future targets
+    • Returns (rec_pred_seq, for_pred) as required by Trainer
 """
 
 import torch
@@ -42,10 +43,36 @@ class QSAL(nn.Module):
     QSAL Wrapper
 
     Full hybrid quantum–classical architecture:
-    - Multimodal feature extraction
-    - QSAL fusion (Quantum Self‑Attention Layer)
-    - Transformer encoder–decoder
-    - V/A recognition + forecasting heads
+        - Multimodal feature extraction
+        - QSAL fusion (Quantum Self‑Attention Layer)
+        - Transformer encoder–decoder
+        - V/A recognition + forecasting heads
+
+    Parameters
+    ----------
+    emb_dim : int
+        Per‑modality embedding dimension (128).
+    proj_dim : int
+        Classical projection dimension before QSAL (unused here).
+    transformer_dim : int
+        Transformer d_model (256).
+    num_heads : int
+        Transformer attention heads.
+    num_layers : int
+        Transformer encoder/decoder layers.
+    target_seq_len : int
+        Temporal length T.
+    forecast_horizon : int
+        Future prediction horizon S.
+    synthetic : bool
+        If True → synthetic mode (QSAL debugging).
+        If False → real mode (RECOLA/SEWA).
+    modalities : dict
+        Modality flags (audio/video/ecg/eda/text).
+    qsal_cfg : dict
+        Quantum configuration (num_qubits, circuit_depth, fusion_dim, num_heads).
+    dataset_name : str
+        "recola", "sewa", or "synthetic".
     """
 
     def __init__(
@@ -69,7 +96,7 @@ class QSAL(nn.Module):
         self.forecast_horizon = forecast_horizon
 
         # ------------------------------------------------------------
-        # 1. Multimodal feature extractors (same pattern as Baseline B3)
+        # 1. Multimodal Feature Extractors (REAL + SYNTHETIC)
         # ------------------------------------------------------------
         self.extractors = MultimodalFeatureExtractors(
             emb_dim=emb_dim,
@@ -92,7 +119,7 @@ class QSAL(nn.Module):
             "num_heads": qsal_cfg.get("num_heads", 4),
         })
 
-        # QSALFusion expects explicit integer dimensions, not a DotDict
+        # QSALFusion outputs (B, T, transformer_dim)
         self.fusion = QSALFusion(
             emb_dim=emb_dim,                          # per‑modality embedding dim
             model_dim=transformer_dim,                # Transformer d_model
@@ -102,7 +129,7 @@ class QSAL(nn.Module):
             learnable_sigma=True,
         )
 
-        # PQC/QSAL fusion already outputs (B, T, transformer_dim)
+        # Identity projection (QSALFusion already outputs correct dim)
         self.fused_proj = nn.Identity()
 
         # ------------------------------------------------------------
@@ -134,16 +161,20 @@ class QSAL(nn.Module):
             output_dim=2,
         )
 
+    # -------------------------------------------------------------
+    # FORWARD PASS
+    # -------------------------------------------------------------
     def forward(self, batch: dict):
         """
-        QSAL forward pass (tuple output format expected by Trainer).
+        QSAL forward pass.
 
         Parameters
         ----------
         batch : dict
             Contains:
-            - "va": (B, T_va, 2)
-            - modality-specific raw signals for extractors
+                - raw signals (REAL mode)
+                - synthetic tensors (SYNTHETIC mode)
+                - "va": (B, T_va, 2)
 
         Returns
         -------
@@ -155,8 +186,8 @@ class QSAL(nn.Module):
         ------------
         batch["va_hist"]   : (B, T_align, 2)
         batch["va_future"] : (B, S, 2)
-        are written so Trainer can compute losses in QSAL mode.
         """
+
         # ------------------------------------------------------------
         # 0. Ground truth V/A
         # ------------------------------------------------------------
@@ -164,21 +195,16 @@ class QSAL(nn.Module):
         B, T_va, _ = va_full.shape
         S = self.forecast_horizon
 
-        # Future ground truth (for QSAL mode)
+        # Future ground truth
         if S <= T_va:
             va_future_gt = va_full[:, -S:, :]
         else:
             va_future_gt = va_full[:, -1:, :].repeat(1, S, 1)
 
         # ------------------------------------------------------------
-        # 1. Multimodal embeddings
+        # 1. Multimodal embeddings (REAL + SYNTHETIC)
         # ------------------------------------------------------------
         emb_dict = self.extractors(batch)   # each: (B, T, emb_dim)
-
-        # DEBUG: check dtypes
-        # for k, v in emb_dict.items():
-        #     if v is not None:
-        #         print("MODALITY:", k, "DTYPE:", v.dtype)
 
         # ------------------------------------------------------------
         # 2. QSAL fusion → (B, T, transformer_dim)
@@ -195,7 +221,7 @@ class QSAL(nn.Module):
         fused_aligned = fused[:, -T_align:, :]
         va_hist = va_full[:, -T_align:, :]
 
-        # Store aligned targets into batch for Trainer (QSAL mode)
+        # Store aligned targets into batch for Trainer
         batch["va_hist"] = va_hist          # (B, T_align, 2)
         batch["va_future"] = va_future_gt   # (B, S, 2)
 
@@ -213,6 +239,4 @@ class QSAL(nn.Module):
         # ------------------------------------------------------------
         # 6. QSAL output format for Trainer
         # ------------------------------------------------------------
-        # Trainer expects QSAL to return a tuple:
-        #   (rec_pred_seq, for_pred)
         return rec_pred_seq, for_pred

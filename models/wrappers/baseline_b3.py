@@ -1,17 +1,29 @@
+# models/wrappers/baseline_b3.py
 """
-baseline_b3.py
+Baseline B3 Wrapper
+-------------------
 
-Baseline B3: Hybrid Quantum–Classical Multimodal Fusion
--------------------------------------------------------
+Hybrid Quantum–Classical Multimodal Fusion (Unified PQC)
 
-This wrapper integrates:
-1. Multimodal feature extractors (audio, video, physiological, text)
-2. Unified PQC fusion (4Q / 6Q / 8Q)
-3. Transformer encoder–decoder for temporal modeling
-4. Recognition and forecasting heads
+This wrapper implements the full Baseline B3 architecture:
 
-The PQC fusion module already outputs a 256‑dimensional sequence,
-so no additional projection is applied before the Transformer.
+    Step‑A: MultimodalFeatureExtractors
+    Step‑B: PQC Fusion (BaselineB3PQCFusion)
+    Step‑C: Transformer Encoder–Decoder
+    Step‑D: Recognition + Forecasting Heads
+
+Fully aligned with the unified modality contract:
+
+    • REAL mode (RECOLA / SEWA)
+        - raw audio/video/ecg/eda/text → encoders → (B, T, 128)
+    • SYNTHETIC mode (debugging)
+        - numeric tensors → synthetic encoders → (B, T, 128)
+
+This version eliminates all text‑modality errors and supports:
+
+    • RECOLA (no text)
+    • SEWA (raw text → DistilBERT)
+    • Synthetic QSAL debugging
 """
 
 import torch
@@ -24,9 +36,6 @@ from models.heads.recognition_head import RecognitionHead
 from models.heads.forecasting_head import ForecastingHead
 
 
-# ------------------------------------------------------------
-#  DotDict — convenience wrapper for config dictionaries
-# ------------------------------------------------------------
 class DotDict(dict):
     """Dictionary with attribute-style access."""
     __getattr__ = dict.get
@@ -34,19 +43,35 @@ class DotDict(dict):
     __delattr__ = dict.__delitem__
 
 
-# ============================================================
-#  Baseline B3 Wrapper
-# ============================================================
-
 class BaselineB3(nn.Module):
     """
-    BaselineB3
+    Baseline B3 — Unified PQC Fusion
 
-    Full hybrid quantum–classical architecture:
-    - Multimodal feature extraction
-    - PQC fusion (4Q / 6Q / 8Q)
-    - Transformer encoder–decoder
-    - V/A recognition + forecasting heads
+    Parameters
+    ----------
+    emb_dim : int
+        Per‑modality embedding dimension (128).
+    proj_dim : int
+        Classical projection dimension (unused here).
+    transformer_dim : int
+        Transformer d_model (256).
+    num_heads : int
+        Transformer attention heads.
+    num_layers : int
+        Transformer encoder/decoder layers.
+    target_seq_len : int
+        Temporal length T.
+    forecast_horizon : int
+        Future prediction horizon S.
+    synthetic : bool
+        If True → synthetic mode (debugging).
+        If False → real mode (RECOLA/SEWA).
+    modalities : dict
+        Modality flags (audio/video/ecg/eda/text).
+    pqc_cfg : dict
+        PQC configuration (num_qubits, depth).
+    dataset_name : str
+        "recola", "sewa", or "synthetic".
     """
 
     def __init__(
@@ -70,7 +95,7 @@ class BaselineB3(nn.Module):
         self.forecast_horizon = forecast_horizon
 
         # ------------------------------------------------------------
-        # 1. Multimodal feature extractors (same as Baseline B2)
+        # 1. Multimodal Feature Extractors (REAL + SYNTHETIC)
         # ------------------------------------------------------------
         self.extractors = MultimodalFeatureExtractors(
             emb_dim=emb_dim,
@@ -87,20 +112,21 @@ class BaselineB3(nn.Module):
         pqc_cfg_full = DotDict({
             "modalities": active_modalities,
             "dataset": dataset_name.lower(),
-            "num_qubits": pqc_cfg.get("num_qubits", 4),   # 4 / 6 / 8
-            "depth": pqc_cfg.get("depth", 3),             # PQC layers
+            "num_qubits": pqc_cfg.get("num_qubits", 4),
+            "depth": pqc_cfg.get("depth", 3),
         })
 
+        # PQC fusion outputs (B, T, transformer_dim)
         self.fusion = BaselineB3PQCFusion(pqc_cfg_full)
 
-        # PQC fusion already outputs (B, T, 256)
+        # Identity projection (PQC already outputs correct dim)
         self.fused_proj = nn.Identity()
 
         # ------------------------------------------------------------
         # 3. Transformer Encoder–Decoder
         # ------------------------------------------------------------
         self.temporal_model = TransformerEncoderDecoder(
-            d_model=transformer_dim,          # 256
+            d_model=transformer_dim,
             nhead=num_heads,
             num_encoder_layers=num_layers,
             num_decoder_layers=num_layers,
@@ -125,28 +151,35 @@ class BaselineB3(nn.Module):
             output_dim=2,
         )
 
-    # ============================================================
-    #  Forward Pass
-    # ============================================================
+    # -------------------------------------------------------------
+    # FORWARD PASS
+    # -------------------------------------------------------------
     def forward(self, batch: dict) -> dict:
         """
+        Forward pass for Baseline B3.
+
         Parameters
         ----------
         batch : dict
             Contains:
-            - "va": (B, T_va, 2)
-            - modality-specific tensors for extractors
+                - raw signals (REAL mode)
+                - synthetic tensors (SYNTHETIC mode)
+                - "va": (B, T_va, 2)
 
         Returns
         -------
-        dict with:
-            - va_pred: (B, T_align, 2)
-            - va_future: (B, S, 2)
-            - va_hist: (B, T_align, 2)
-            - va_future_gt: (B, S, 2)
+        dict
+            {
+                "va_pred":      (B, T_align, 2),
+                "va_future":    (B, S, 2),
+                "va_hist":      (B, T_align, 2),
+                "va_future_gt": (B, S, 2)
+            }
         """
 
-        # Ground truth V/A
+        # ------------------------------------------------------------
+        # 0. Ground truth V/A
+        # ------------------------------------------------------------
         va_full = batch["va"]          # (B, T_va, 2)
         B, T_va, _ = va_full.shape
         S = self.forecast_horizon
@@ -158,15 +191,15 @@ class BaselineB3(nn.Module):
             va_future_gt = va_full[:, -1:, :].repeat(1, S, 1)
 
         # ------------------------------------------------------------
-        # 1. Multimodal embeddings
+        # 1. Multimodal embeddings (REAL + SYNTHETIC)
         # ------------------------------------------------------------
         emb_dict = self.extractors(batch)   # each: (B, T, emb_dim)
 
         # ------------------------------------------------------------
-        # 2. PQC fusion → (B, T, 256)
+        # 2. PQC fusion → (B, T, transformer_dim)
         # ------------------------------------------------------------
         fused_raw = self.fusion(emb_dict)
-        fused = self.fused_proj(fused_raw)  # Identity
+        fused = self.fused_proj(fused_raw)
 
         # ------------------------------------------------------------
         # 3. Temporal alignment (match fused length with VA length)
@@ -185,9 +218,12 @@ class BaselineB3(nn.Module):
         # ------------------------------------------------------------
         # 5. Heads
         # ------------------------------------------------------------
-        va_pred = self.recognition_head(enc_out)
-        va_future_pred = self.forecasting_head(dec_out)
+        va_pred = self.recognition_head(enc_out)      # (B, T_align, 2)
+        va_future_pred = self.forecasting_head(dec_out)  # (B, S, 2)
 
+        # ------------------------------------------------------------
+        # 6. Output dictionary
+        # ------------------------------------------------------------
         return {
             "va_pred": va_pred,
             "va_future": va_future_pred,

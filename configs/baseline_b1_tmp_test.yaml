@@ -1,0 +1,28 @@
+dataset:
+  forecast_horizon: 20
+  name: sewa
+  synthetic: false
+  target_seq_len: 100
+logging:
+  checkpoint_dir: runs/baseline_b1/
+  log_interval: 20
+model:
+  emb_dim: 128
+  fusion_dim: 128
+  modalities:
+    audio: true
+    ecg: false
+    eda: false
+    text: true
+    video: true
+  name: baseline_b1
+  num_heads: 4
+  num_layers: 4
+  transformer_dim: 256
+training:
+  batch_size: 16
+  device: auto
+  epochs: 3
+  lr: 0.0001
+  patience: 3
+  weight_decay: 0.0

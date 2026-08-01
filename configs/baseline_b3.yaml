@@ -1,37 +1,61 @@
 # ============================================================
-# Baseline B3 — Multimodal Entangled PQC Fusion (Unified 4Q/6Q/8Q)
+# Baseline B3 — Unified Multimodal Entangled PQC Fusion
+# Fully aligned with updated BaselineB3 wrapper + PQC Fusion
 # ============================================================
 
 dataset:
-  name: recola          # or "sewa"
-  T: 300                # sequence length
-  S: 50                 # forecasting horizon
+  # Dataset name: "recola", "sewa"
+  name: "sewa"
+
+  # Temporal sequence length T (RECOLA=300, SEWA≈50)
+  target_seq_len: 300
+
+  # Forecasting horizon S (future steps)
+  forecast_horizon: 50
+
+  # Synthetic mode disabled for Baseline B3
+  synthetic: false
 
 model:
-  name: baseline_b3
+  name: "baseline_b3"
 
-  # Feature extractor output dim
+  # Per‑modality embedding dimension (from feature extractors)
   emb_dim: 128
 
-  # PQC fusion parameters (classical side)
-  proj_dim: 16              # 128 → 16 per modality
-  fused_dim: 64             # 4 × 16
-  transformer_dim: 256      # PQC output → transformer input
+  # Classical projection inside PQC fusion (128 → 16)
+  proj_dim: 16
 
+  # Fused slot dimension (4 × 16 = 64)
+  fused_dim: 64
+
+  # Transformer d_model (PQC output → transformer input)
+  transformer_dim: 256
+
+  # Transformer hyperparameters
   num_heads: 2
   num_layers: 2
 
-  # PQC configuration (Unified PQC)
+  # Active modalities (REAL mode)
+  modalities:
+    audio: true
+    video: true
+    ecg: true
+    eda: true
+    text: true        # RECOLA has no text modality
+
+  # Unified PQC configuration
   pqc:
-    num_qubits: 8           # choose: 4, 6, or 8
-    depth: 3                # PQC layers
+    num_qubits: 8      # choose: 4, 6, or 8
+    depth: 3           # PQC layers
 
 training:
   batch_size: 4
+  epochs: 1
   lr: 0.0001
-  epochs: 2
+  weight_decay: 0.0
   patience: 3
-  device: cpu               # PQC uses lightning.qubit (CPU backend)
+  device: "cpu"        # PQC uses lightning.qubit (CPU backend)
 
 logging:
   checkpoint_dir: "runs/baseline_b3/"
+  log_interval: 20

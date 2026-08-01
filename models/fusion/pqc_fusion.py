@@ -1,17 +1,30 @@
+# models/fusion/pqc_fusion.py
 """
-pqc_fusion.py
+Unified PQC Fusion for Baseline B3 (Dynamic Modality Support)
+-------------------------------------------------------------
 
-Baseline B3: Multimodal Entangled PQC Fusion (Unified 4Q / 6Q / 8Q)
-------------------------------------------------------------------
+This module implements the complete quantum-classical fusion pipeline
+for Baseline B3, now with **flexible modality count**:
 
-This module implements:
-1. UnifiedPQC — a parameterised quantum circuit supporting 4, 6, or 8 qubits,
-   with data reuploading, trainable RZ/RY rotations, and ring entanglement.
-2. BaselineB3PQCFusion — the multimodal fusion layer that maps modality‑specific
-   embeddings to a fused 256‑dimensional sequence for the temporal model.
+    • REAL mode (RECOLA / SEWA)
+        - audio/video/ecg/eda/text → encoders → (B, T, 128)
+    • SYNTHETIC mode (debugging)
+        - numeric tensors → synthetic encoders → (B, T, 128)
 
-All other components (dataset, feature extractors, transformer, heads, trainer)
-are reused from Baseline B1/B2.
+Fusion Steps (modality-flexible):
+    1. Per‑modality projection: 128 → 16
+    2. Stack all active modalities → (B, T, M, 16), M = #modalities
+    3. Aggregate across modalities (mean) → (B, T, 16)
+    4. Project aggregated slot: 16 → 64
+    5. Classical → quantum encoding: 64 → Q angles
+    6. Unified PQC (4Q / 6Q / 8Q)
+    7. PQC output → 256‑dimensional fused representation
+
+Key properties:
+    - Works for any number of active modalities M ≥ 1
+    - Output dimension is fixed: 256 (Transformer input)
+    - No hard-coded "4-slot" constraint anymore
+    - Robust to config.modalities being dict or list
 """
 
 import torch
@@ -27,21 +40,29 @@ class UnifiedPQC(nn.Module):
     """
     UnifiedPQC
 
-    A generalised parameterised quantum circuit supporting 4, 6, or 8 qubits.
+    Generalised parameterised quantum circuit supporting:
+        • 4 qubits
+        • 6 qubits
+        • 8 qubits
 
     Architecture:
-    - Initial angle encoding: RY(α_i)
-    - L layers of:
-        * Data reuploading: RY(α_i)
-        * Trainable rotations: RZ(φ_i^ℓ), RY(θ_i^ℓ)
-        * Ring entanglement: CNOT(0→1→...→Q‑1→0)
-    - Measurement: ⟨Z_i⟩ for all qubits
+        - Initial angle encoding: RY(α_i)
+        - L layers of:
+            * Data reuploading: RY(α_i)
+            * Trainable rotations: RZ(φ_i^ℓ), RY(θ_i^ℓ)
+            * Ring entanglement: CNOT(0→1→...→Q‑1→0)
+        - Measurement: ⟨Z_i⟩ for all qubits
 
-    This matches the Baseline B3 PQC design described in the thesis.
+    Output:
+        (B, T, Q) expectation values
     """
 
-    def __init__(self, num_qubits: int = 4, depth: int = 3,
-                 device_name: str = "lightning.qubit") -> None:
+    def __init__(
+        self,
+        num_qubits: int = 4,
+        depth: int = 3,
+        device_name: str = "lightning.qubit",
+    ) -> None:
         super().__init__()
 
         if num_qubits not in [4, 6, 8]:
@@ -54,15 +75,12 @@ class UnifiedPQC(nn.Module):
         self.theta = nn.Parameter(torch.randn(depth, num_qubits) * 0.1)
         self.phi = nn.Parameter(torch.randn(depth, num_qubits) * 0.1)
 
-        # CPU‑accelerated PennyLane backend
+        # PennyLane backend
         self.dev = qml.device(device_name, wires=self.num_qubits)
 
         # Torch‑compatible QNode
         self.qnode = qml.QNode(self._circuit, self.dev, interface="torch")
 
-    # ------------------------------------------------------------
-    #  Quantum circuit definition
-    # ------------------------------------------------------------
     def _circuit(self, angles, theta, phi):
         """
         PQC executed by lightning.qubit.
@@ -94,17 +112,13 @@ class UnifiedPQC(nn.Module):
                 qml.RZ(phi[l, i], wires=i)
                 qml.RY(theta[l, i], wires=i)
 
-            # Ring entanglement: 0→1→...→Q‑1→0
+            # Ring entanglement
             for i in range(self.num_qubits - 1):
                 qml.CNOT(wires=[i, i + 1])
             qml.CNOT(wires=[self.num_qubits - 1, 0])
 
-        # Z expectation on all qubits
         return [qml.expval(qml.PauliZ(i)) for i in range(self.num_qubits)]
 
-    # ------------------------------------------------------------
-    #  Forward pass
-    # ------------------------------------------------------------
     def forward(self, angles: torch.Tensor) -> torch.Tensor:
         """
         Forward pass through the PQC.
@@ -133,89 +147,153 @@ class UnifiedPQC(nn.Module):
 
 
 # ============================================================
-#  BaselineB3PQCFusion — Multimodal PQC Fusion Layer
+#  BaselineB3PQCFusion — Multimodal PQC Fusion Layer (Dynamic M)
 # ============================================================
 
 class BaselineB3PQCFusion(nn.Module):
     """
-    BaselineB3PQCFusion
+    BaselineB3PQCFusion (dynamic modality count)
 
-    Steps:
-    1. Project each modality embedding h_m(t) ∈ ℝ¹²⁸ → z_m(t) ∈ ℝ¹⁶
-    2. Build 4‑slot representation (SEWA uses learned null slot)
-    3. Concatenate → Z(t) ∈ ℝ⁶⁴
-    4. Encode → α(t) ∈ ℝ^Q  (Q = 4, 6, or 8)
-    5. PQC → q(t) ∈ ℝ^Q
-    6. Project → f(t) ∈ ℝ²⁵⁶ (Transformer input)
+    Fusion Steps:
+        1. Project each modality embedding: 128 → 16
+        2. Stack all active modalities: (B, T, M, 16)
+        3. Aggregate across modalities (mean): (B, T, 16)
+        4. Project aggregated slot: 16 → 64
+        5. Classical → quantum encoding: 64 → Q
+        6. Unified PQC → q(t) ∈ ℝ^Q
+        7. Project → f(t) ∈ ℝ²⁵⁶ (Transformer input)
+
+    This design:
+        - Supports any number of active modalities M ≥ 1
+        - Keeps a fixed fused dimension (256) for the transformer
+        - Removes the previous "exactly 4 slots" constraint
+        - Accepts config.modalities as dict or list
     """
 
     def __init__(self, config) -> None:
         super().__init__()
 
-        self.modalities = list(config.modalities)
-        self.dataset = getattr(config, "dataset", "").lower()
-        self.num_qubits = getattr(config, "num_qubits", 4)
+        # ---------------------------------------------------------
+        # Resolve active modalities from config (dict or list)
+        # ---------------------------------------------------------
+        raw_modalities = getattr(config, "modalities", None)
+        if raw_modalities is None:
+            raise ValueError("BaselineB3PQCFusion requires a 'modalities' field in config.")
 
+        # Case 1: dict {modality_name: bool}
+        if isinstance(raw_modalities, dict):
+            self.modalities = [m for m, flag in raw_modalities.items() if flag]
+
+        # Case 2: list ["audio", "video", ...]
+        elif isinstance(raw_modalities, list):
+            self.modalities = list(raw_modalities)
+
+        else:
+            raise ValueError(
+                f"Unsupported type for config.modalities in BaselineB3PQCFusion: {type(raw_modalities)}"
+            )
+
+        if len(self.modalities) == 0:
+            raise ValueError("BaselineB3PQCFusion received an empty modality list.")
+
+        # ---------------------------------------------------------
         # Per‑modality projection: 128 → 16
+        # ---------------------------------------------------------
         self.mod_proj = nn.ModuleDict({
             m: nn.Linear(128, 16) for m in self.modalities
         })
 
-        # Null slot for SEWA (3 modalities)
-        self.null_slot = nn.Parameter(torch.zeros(16))
+        # Aggregation: 16 → 64 (fixed fused slot dimension)
+        self.slot_agg = nn.Linear(16, 64)
 
         # Classical → quantum encoding: 64 → Q
+        self.num_qubits = getattr(config, "num_qubits", 4)
         self.angle_encoder = nn.Linear(64, self.num_qubits)
 
         # Unified PQC
         self.pqc = UnifiedPQC(
             num_qubits=self.num_qubits,
             depth=getattr(config, "depth", 3),
-            device_name="lightning.qubit"
+            device_name="lightning.qubit",
         )
 
         # PQC output → Transformer input: Q → 256
         self.post_proj = nn.Linear(self.num_qubits, 256)
 
-    # ------------------------------------------------------------
-    #  Build 4‑slot representation
-    # ------------------------------------------------------------
     def _build_slots(self, features: dict) -> torch.Tensor:
+        """
+        Build modality‑aggregated representation from modality embeddings.
+
+        Parameters
+        ----------
+        features : dict
+            {
+                "audio": (B, T, 128) or None,
+                "video": (B, T, 128) or None,
+                "ecg":   (B, T, 128) or None,
+                "eda":   (B, T, 128) or None,
+                "text":  (B, T, 128) or None
+            }
+
+        Returns
+        -------
+        Z : Tensor(B, T, 64)
+            Aggregated fused representation (fixed 64‑dim).
+        """
+
         slot_list = []
 
+        # Collect projected slots for all active modalities that are present
         for m in self.modalities:
-            h_m = features[m]          # (B, T, 128)
+            h_m = features.get(m, None)
+            if h_m is None:
+                # Modality inactive or missing in this batch
+                continue
+
+            # h_m: (B, T, 128) → z_m: (B, T, 16)
             z_m = self.mod_proj[m](h_m)
             slot_list.append(z_m)
 
-        B, T, _ = slot_list[0].shape
+        if len(slot_list) == 0:
+            raise ValueError("BaselineB3PQCFusion received no active modality features.")
 
-        # SEWA: add learned null slot
-        if self.dataset == "sewa" and len(slot_list) == 3:
-            null = self.null_slot.view(1, 1, 16).expand(B, T, 16)
-            slot_list.append(null)
+        # Stack slots: (B, T, M, 16)
+        stacked = torch.stack(slot_list, dim=2)
 
-        if len(slot_list) != 4:
-            raise ValueError(f"Expected 4 slots, got {len(slot_list)}.")
+        # Aggregate across modalities (mean): (B, T, 16)
+        mean_slots = stacked.mean(dim=2)
 
-        return torch.cat(slot_list, dim=-1)  # (B, T, 64)
+        # Project aggregated slot: 16 → 64
+        Z = self.slot_agg(mean_slots)  # (B, T, 64)
 
-    # ------------------------------------------------------------
-    #  Forward pass
-    # ------------------------------------------------------------
+        return Z
+
     def forward(self, features: dict) -> torch.Tensor:
+        """
+        PQC fusion forward pass.
 
-        # Step 1: Build Z(t) ∈ ℝ⁶⁴
-        Z = self._build_slots(features)
+        Parameters
+        ----------
+        features : dict
+            Modality embeddings (B, T, 128) for all active modalities.
+
+        Returns
+        -------
+        fused : (B, T, 256)
+            Fused quantum‑classical representation suitable as transformer input.
+        """
+
+        # Step 1: Build Z(t) ∈ ℝ⁶⁴ (modality‑aggregated)
+        Z = self._build_slots(features)  # (B, T, 64)
 
         # Step 2: Encode → α(t) ∈ ℝ^Q
-        angles = self.angle_encoder(Z)
+        angles = self.angle_encoder(Z)   # (B, T, Q)
 
         # Step 3: PQC → q(t) ∈ ℝ^Q
-        q = self.pqc(angles)
+        q = self.pqc(angles)            # (B, T, Q)
 
         # Step 4: Convert float64 → float32 for PyTorch Linear
         q = q.to(torch.float32)
 
         # Step 5: Project → f(t) ∈ ℝ²⁵⁶
-        return self.post_proj(q)
+        return self.post_proj(q)        # (B, T, 256)

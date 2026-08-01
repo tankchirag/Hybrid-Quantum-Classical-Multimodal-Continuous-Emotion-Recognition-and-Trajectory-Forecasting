@@ -1,13 +1,24 @@
+# training/train_baseline_b3.py
 """
-Training script for Baseline B3 (Unified PQC Fusion).
-Mirrors Baseline B1/B2 training pipeline for scientific fairness.
+Baseline B3 Training Script
+---------------------------
 
-This script:
-- Loads configuration
-- Builds datasets and dataloaders
-- Instantiates Baseline B3 with Unified PQC (4Q / 6Q / 8Q)
-- Trains using the generic Trainer class
-- Logs metrics and saves best model
+This script trains the Baseline B3 model using the unified PQC fusion
+architecture. It is fully aligned with the updated unified modality
+contract and the corrected BaselineB3 wrapper.
+
+Pipeline:
+    Step‑A: UnifiedMultimodalDataset (REAL mode)
+    Step‑B: multimodal_collate_fn
+    Step‑C: BaselineB3 wrapper (feature extractors + PQC fusion)
+    Step‑D: Transformer Encoder–Decoder
+    Step‑E: Recognition + Forecasting heads
+    Step‑F: Trainer (losses, early stopping, checkpointing)
+
+Outputs:
+    • best_model.pt
+    • training_log.json
+    • config_used.json
 """
 
 import os
@@ -27,7 +38,6 @@ if ROOT not in sys.path:
 from utils.config import load_config
 from models.wrappers.baseline_b3 import BaselineB3
 from training.trainer import Trainer
-
 from datasets.unified_multimodal_dataset import UnifiedMultimodalDataset
 from datasets.collate_fn import multimodal_collate_fn
 
@@ -36,6 +46,10 @@ from datasets.collate_fn import multimodal_collate_fn
 # RUN DIRECTORY CREATION
 # ---------------------------------------------------------
 def make_run_folder(base_dir="runs/baseline_b3"):
+    """
+    Creates a timestamped run directory:
+        runs/baseline_b3/YYYY-MM-DD_HH-MM-SS/
+    """
     timestamp = time.strftime("%Y-%m-%d_%H-%M-%S")
     run_dir = os.path.join(base_dir, timestamp)
     os.makedirs(run_dir, exist_ok=True)
@@ -48,14 +62,14 @@ def make_run_folder(base_dir="runs/baseline_b3"):
 def select_device(cfg_device: str):
     """
     Selects CPU or CUDA device safely.
-    PQC uses lightning.qubit → CPU backend, so CUDA is optional.
+    PQC uses lightning.qubit → CPU backend, but CUDA is allowed
+    for classical components (encoders, transformer).
     """
     if cfg_device == "cpu":
         return torch.device("cpu")
     if cfg_device == "cuda":
         return torch.device("cuda")
     try:
-        _ = torch.cuda.device_count()
         return torch.device("cuda")
     except Exception:
         return torch.device("cpu")
@@ -67,21 +81,20 @@ def select_device(cfg_device: str):
 def main():
 
     # ---------------------------------------------------------
-    # LOAD CONFIG
+    # 1. Load config
     # ---------------------------------------------------------
     cfg = load_config("configs/baseline_b3.yaml")
 
     # ---------------------------------------------------------
-    # DEVICE
+    # 2. Device
     # ---------------------------------------------------------
-    cfg_device = cfg["training"].get("device", "auto")
-    device = select_device(cfg_device)
+    device = select_device(cfg["training"]["device"])
     print(f"[INFO] Using device: {device}")
 
     # ---------------------------------------------------------
-    # CREATE RUN FOLDER
+    # 3. Create run directory
     # ---------------------------------------------------------
-    run_dir = make_run_folder()
+    run_dir = make_run_folder(cfg["logging"]["checkpoint_dir"])
     ckpt_path = os.path.join(run_dir, "best_model.pt")
     log_path = os.path.join(run_dir, "training_log.json")
 
@@ -92,15 +105,27 @@ def main():
         json.dump(cfg, f, indent=4)
 
     # ---------------------------------------------------------
-    # DATASETS
+    # 4. Dataset (REAL mode)
     # ---------------------------------------------------------
-    dataset_name = cfg["dataset"].get("name", "recola")
+    dataset_name = cfg["dataset"]["name"]
+    target_seq_len = cfg["dataset"]["target_seq_len"]
+    forecast_horizon = cfg["dataset"]["forecast_horizon"]
 
-    train_set = UnifiedMultimodalDataset(dataset_name=dataset_name)
-    val_set   = UnifiedMultimodalDataset(dataset_name=dataset_name)
+    train_set = UnifiedMultimodalDataset(
+        dataset_name=dataset_name,
+        target_seq_len=target_seq_len,
+        synthetic=False,
+    )
 
-    modalities = train_set.modalities
+    val_set = UnifiedMultimodalDataset(
+        dataset_name=dataset_name,
+        target_seq_len=target_seq_len,
+        synthetic=False,
+    )
 
+    modalities = cfg["model"]["modalities"]
+
+    # DataLoaders with correct collate_fn
     train_loader = DataLoader(
         train_set,
         batch_size=cfg["training"]["batch_size"],
@@ -116,10 +141,10 @@ def main():
     )
 
     # ---------------------------------------------------------
-    # MODEL (Baseline B3)
+    # 5. Model (Baseline B3 wrapper)
     # ---------------------------------------------------------
     model_cfg = cfg["model"]
-    pqc_cfg = model_cfg.get("pqc", {})
+    pqc_cfg = model_cfg["pqc"]
 
     model = BaselineB3(
         emb_dim=model_cfg["emb_dim"],
@@ -127,8 +152,8 @@ def main():
         transformer_dim=model_cfg["transformer_dim"],
         num_heads=model_cfg["num_heads"],
         num_layers=model_cfg["num_layers"],
-        target_seq_len=cfg["dataset"]["T"],
-        forecast_horizon=cfg["dataset"]["S"],
+        target_seq_len=target_seq_len,
+        forecast_horizon=forecast_horizon,
         synthetic=False,
         modalities=modalities,
         pqc_cfg=pqc_cfg,
@@ -143,15 +168,16 @@ def main():
     print(f"       Fusion Out  : 256-dim\n")
 
     # ---------------------------------------------------------
-    # OPTIMIZER
+    # 6. Optimizer
     # ---------------------------------------------------------
     optimizer = torch.optim.Adam(
         model.parameters(),
-        lr=cfg["training"]["lr"]
+        lr=cfg["training"]["lr"],
+        weight_decay=cfg["training"]["weight_decay"],
     )
 
     # ---------------------------------------------------------
-    # TRAINER
+    # 7. Trainer
     # ---------------------------------------------------------
     trainer = Trainer(
         model=model,
@@ -164,7 +190,7 @@ def main():
     )
 
     # ---------------------------------------------------------
-    # TRAIN LOOP
+    # 8. Training loop
     # ---------------------------------------------------------
     history = []
     total_epochs = cfg["training"]["epochs"]
@@ -172,7 +198,6 @@ def main():
     print("\n[INFO] Starting Baseline B3 training...\n")
 
     for epoch in range(1, total_epochs + 1):
-
         epoch_start = time.time()
 
         # TRAIN

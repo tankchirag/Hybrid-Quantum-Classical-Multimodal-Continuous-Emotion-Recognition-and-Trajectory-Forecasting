@@ -1,21 +1,53 @@
-dataset:
-  name: recola
-  length: 5000        # realistic dataset size
-  T: 100              # 4 seconds @ 25 FPS (video) or 100 audio frames
-  S: 20               # 1–2 second forecasting horizon
+# ============================================================
+# Baseline B1 — Classical Multimodal Fusion
+# Fully aligned with updated BaselineB1 wrapper + dataset pipeline
+# ============================================================
 
-model:
-  emb_dim: 128        # realistic embedding size (wav2vec2=768, ResNet=512 → projected to 256)
-  fusion_dim: 128     # realistic fusion bottleneck
-  transformer_dim: 512
-  num_heads: 8        # standard for 512-dim transformer
-  num_layers: 4       # deep enough for thesis-level modeling
-  include_text: true
+dataset:
+  # Dataset name: "recola" or "sewa"
+  name: "recola"
+
+  # Temporal sequence length T (RECOLA≈300, SEWA≈50)
+  target_seq_len: 100
+
+  # Forecasting horizon S (future steps)
+  forecast_horizon: 20
+
+  # Synthetic mode disabled for Baseline B1
   synthetic: false
 
+model:
+  name: "baseline_b1"
+
+  # Per‑modality embedding dimension (from feature extractors)
+  emb_dim: 128
+
+  # Classical fusion bottleneck dimension
+  fusion_dim: 128
+
+  # Transformer d_model
+  transformer_dim: 256
+
+  # Transformer hyperparameters
+  num_heads: 4
+  num_layers: 4
+
+  # Active modalities (REAL mode)
+  modalities:
+    audio: true
+    video: true
+    ecg: true
+    eda: true
+    text: false        # RECOLA → set false, SEWA → true
+
 training:
-  batch_size: 16      # GPU-friendly
-  lr: 0.0001
+  batch_size: 16
   epochs: 3
-  device: auto
+  lr: 0.0001
+  weight_decay: 0.0
   patience: 3
+  device: "auto"      # CUDA if available, else CPU
+
+logging:
+  checkpoint_dir: "runs/baseline_b1/"
+  log_interval: 20

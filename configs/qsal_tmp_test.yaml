@@ -1,0 +1,35 @@
+dataset:
+  forecast_horizon: 20
+  name: sewa
+  num_samples: 200
+  synthetic: false
+  target_seq_len: 100
+logging:
+  log_interval: 20
+  run_dir: runs/qsal/
+model:
+  emb_dim: 128
+  modalities:
+    audio: true
+    ecg: false
+    eda: false
+    text: true
+    video: true
+  name: QSAL
+  num_heads: 4
+  num_layers: 4
+  proj_dim: 64
+  qsal:
+    circuit_depth: 2
+    fusion_dim: 256
+    num_heads: 4
+    num_qubits: 4
+  target_seq_len: 50
+  transformer_dim: 256
+training:
+  batch_size: 4
+  device: cpu
+  epochs: 1
+  lr: 0.0003
+  patience: 5
+  weight_decay: 0.0

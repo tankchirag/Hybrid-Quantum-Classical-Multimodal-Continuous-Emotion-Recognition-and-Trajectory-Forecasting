@@ -1,14 +1,24 @@
+# training/train_baseline_b1.py
 """
-Training script for Baseline B1 (Classical Fusion).
+Baseline B1 Training Script
+---------------------------
 
-Features:
-    - YAML config loading
-    - Robust device auto-selection (Windows-safe)
-    - Unique run directory per experiment
-    - tqdm progress bars (batch-level)
-    - Epoch timing + ETA estimation
-    - JSON logging
-    - Safe checkpoint naming (no overwrites)
+This script trains the Baseline B1 model using classical fusion.
+It is fully aligned with the updated unified modality contract and the
+corrected BaselineB1 wrapper.
+
+Pipeline:
+    Step‑A: UnifiedMultimodalDataset (REAL mode)
+    Step‑B: multimodal_collate_fn
+    Step‑C: BaselineB1 wrapper (feature extractors + classical fusion)
+    Step‑D: Transformer Encoder–Decoder
+    Step‑E: Recognition + Forecasting heads
+    Step‑F: Trainer (losses, early stopping, checkpointing)
+
+Outputs:
+    • best_model.pt
+    • training_log.json
+    • config_used.json
 """
 
 import os
@@ -30,7 +40,6 @@ from utils.config import load_config
 from models.wrappers.baseline_b1 import BaselineB1
 from training.trainer import Trainer
 
-# NEW IMPORTS FOR REAL DATA
 from datasets.unified_multimodal_dataset import UnifiedMultimodalDataset
 from datasets.collate_fn import multimodal_collate_fn
 
@@ -39,6 +48,10 @@ from datasets.collate_fn import multimodal_collate_fn
 # RUN DIRECTORY CREATION
 # ---------------------------------------------------------
 def make_run_folder(base_dir="runs/baseline_b1"):
+    """
+    Creates a timestamped run directory:
+        runs/baseline_b1/YYYY-MM-DD_HH-MM-SS/
+    """
     timestamp = time.strftime("%Y-%m-%d_%H-%M-%S")
     run_dir = os.path.join(base_dir, timestamp)
     os.makedirs(run_dir, exist_ok=True)
@@ -46,26 +59,18 @@ def make_run_folder(base_dir="runs/baseline_b1"):
 
 
 # ---------------------------------------------------------
-# SAFE DEVICE SELECTION (Windows-friendly)
+# SAFE DEVICE SELECTION
 # ---------------------------------------------------------
 def select_device(cfg_device: str):
     """
-    Device selection logic that avoids Windows CUDA hangs.
-
-    Modes:
-        - "cpu"  → always CPU
-        - "cuda" → force CUDA (if available)
-        - "auto" → try CUDA, fallback to CPU safely
+    Selects CPU or CUDA device safely.
+    Baseline B1 is fully classical → CUDA allowed.
     """
     if cfg_device == "cpu":
         return torch.device("cpu")
-
     if cfg_device == "cuda":
         return torch.device("cuda")
-
-    # AUTO MODE (safe)
     try:
-        _ = torch.cuda.device_count()
         return torch.device("cuda")
     except Exception:
         return torch.device("cpu")
@@ -77,20 +82,18 @@ def select_device(cfg_device: str):
 def main():
 
     # ---------------------------------------------------------
-    # LOAD CONFIG
+    # 1. Load config
     # ---------------------------------------------------------
     cfg = load_config("configs/baseline_b1.yaml")
 
     # ---------------------------------------------------------
-    # DEVICE SELECTION
+    # 2. Device
     # ---------------------------------------------------------
-    cfg_device = cfg["training"].get("device", "auto")
-    device = select_device(cfg_device)
-
+    device = select_device(cfg["training"]["device"])
     print(f"[INFO] Using device: {device}")
 
     # ---------------------------------------------------------
-    # CREATE RUN FOLDER
+    # 3. Create run directory
     # ---------------------------------------------------------
     run_dir = make_run_folder()
     ckpt_path = os.path.join(run_dir, "best_model.pt")
@@ -98,14 +101,32 @@ def main():
 
     print(f"[INFO] Run directory: {run_dir}")
 
-    # ---------------------------------------------------------
-    # DATASETS (REAL MODE)
-    # ---------------------------------------------------------
-    dataset_name = cfg["dataset"].get("name", "recola")
+    # Save config for reproducibility
+    with open(os.path.join(run_dir, "config_used.json"), "w") as f:
+        json.dump(cfg, f, indent=4)
 
-    train_set = UnifiedMultimodalDataset(dataset_name=dataset_name)
-    val_set   = UnifiedMultimodalDataset(dataset_name=dataset_name)
+    # ---------------------------------------------------------
+    # 4. Dataset (REAL mode)
+    # ---------------------------------------------------------
+    dataset_name = cfg["dataset"]["name"]
+    target_seq_len = cfg["dataset"]["target_seq_len"]
+    forecast_horizon = cfg["dataset"]["forecast_horizon"]
 
+    train_set = UnifiedMultimodalDataset(
+        dataset_name=dataset_name,
+        target_seq_len=target_seq_len,
+        synthetic=False,
+    )
+
+    val_set = UnifiedMultimodalDataset(
+        dataset_name=dataset_name,
+        target_seq_len=target_seq_len,
+        synthetic=False,
+    )
+
+    modalities = cfg["model"]["modalities"]
+
+    # DataLoaders with correct collate_fn
     train_loader = DataLoader(
         train_set,
         batch_size=cfg["training"]["batch_size"],
@@ -121,30 +142,38 @@ def main():
     )
 
     # ---------------------------------------------------------
-    # MODEL
+    # 5. Model (Baseline B1 wrapper)
     # ---------------------------------------------------------
+    model_cfg = cfg["model"]
+
     model = BaselineB1(
-        emb_dim=cfg["model"]["emb_dim"],
-        fusion_dim=cfg["model"]["fusion_dim"],
-        transformer_dim=cfg["model"]["transformer_dim"],
-        num_heads=cfg["model"]["num_heads"],
-        num_layers=cfg["model"]["num_layers"],
-        target_seq_len=cfg["dataset"]["T"],
-        forecast_horizon=cfg["dataset"]["S"],
-        synthetic=False,                     # REAL MODE
-        include_text=cfg["model"]["include_text"],
+        emb_dim=model_cfg["emb_dim"],
+        fusion_dim=model_cfg["fusion_dim"],
+        transformer_dim=model_cfg["transformer_dim"],
+        num_heads=model_cfg["num_heads"],
+        num_layers=model_cfg["num_layers"],
+        target_seq_len=target_seq_len,
+        forecast_horizon=forecast_horizon,
+        synthetic=False,
+        modalities=modalities,
     ).to(device)
 
+    print("\n[INFO] Baseline B1 Configuration:")
+    print(f"       Modalities     : {modalities}")
+    print(f"       Fusion Dim     : {model_cfg['fusion_dim']}")
+    print(f"       Transformer Dim: {model_cfg['transformer_dim']}\n")
+
     # ---------------------------------------------------------
-    # OPTIMIZER
+    # 6. Optimizer
     # ---------------------------------------------------------
     optimizer = torch.optim.Adam(
         model.parameters(),
-        lr=cfg["training"]["lr"]
+        lr=cfg["training"]["lr"],
+        weight_decay=cfg["training"]["weight_decay"],
     )
 
     # ---------------------------------------------------------
-    # TRAINER
+    # 7. Trainer
     # ---------------------------------------------------------
     trainer = Trainer(
         model=model,
@@ -157,29 +186,24 @@ def main():
     )
 
     # ---------------------------------------------------------
-    # TRAIN LOOP WITH TIMING
+    # 8. Training loop
     # ---------------------------------------------------------
     history = []
     total_epochs = cfg["training"]["epochs"]
 
-    print("\n[INFO] Starting training...\n")
+    print("\n[INFO] Starting Baseline B1 training...\n")
 
     for epoch in range(1, total_epochs + 1):
-
         epoch_start = time.time()
 
-        # -------------------------
         # TRAIN
-        # -------------------------
         train_stats = trainer.train_one_epoch(
             train_loader=train_loader,
             epoch=epoch,
             total_epochs=total_epochs,
         )
 
-        # -------------------------
         # VALIDATE
-        # -------------------------
         val_stats = trainer.eval_one_epoch(
             val_loader=val_loader,
             epoch=epoch,
@@ -188,9 +212,6 @@ def main():
 
         epoch_time = time.time() - epoch_start
 
-        # -------------------------
-        # LOGGING
-        # -------------------------
         stats = {
             "epoch": epoch,
             "train": train_stats,
@@ -209,7 +230,7 @@ def main():
         with open(log_path, "w") as f:
             json.dump(history, f, indent=4)
 
-    print("\n[INFO] Training complete.")
+    print("\n[INFO] Baseline B1 training complete.")
     print(f"[INFO] Best model saved to: {ckpt_path}")
     print(f"[INFO] Training log saved to: {log_path}")
 
