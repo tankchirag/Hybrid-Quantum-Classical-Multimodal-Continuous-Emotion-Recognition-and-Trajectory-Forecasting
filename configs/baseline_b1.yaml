@@ -1,53 +1,267 @@
-# ============================================================
-# Baseline B1 — Classical Multimodal Fusion
-# Fully aligned with updated BaselineB1 wrapper + dataset pipeline
-# ============================================================
+# ==========================================================
+# Baseline B1
+# Classical Self-Attention Fusion Baseline
+# ==========================================================
 
-dataset:
-  # Dataset name: "recola" or "sewa"
-  name: "recola"
+experiment:
 
-  # Temporal sequence length T (RECOLA≈300, SEWA≈50)
-  target_seq_len: 100
-
-  # Forecasting horizon S (future steps)
-  forecast_horizon: 20
-
-  # Synthetic mode disabled for Baseline B1
-  synthetic: false
-
-model:
   name: "baseline_b1"
 
-  # Per‑modality embedding dimension (from feature extractors)
+  description: >
+    Classical self-attention fusion baseline for
+    multimodal affective computing, emotion
+    recognition, stress recognition, workload
+    modelling, fatigue estimation, and future
+    trajectory forecasting.
+
+
+# ==========================================================
+# Dataset
+# ==========================================================
+
+dataset:
+
+  name: "ulm_tsst_v1"
+
+  type: "disk"
+
+  config_path: "configs/datasets/ulm_tsst_v1.yaml"
+
+  root_dir: "data/generated/ulm_tsst_v1"
+
+  train_split: "train"
+
+  val_split: "val"
+
+  test_split: "test"
+
+
+# ==========================================================
+# Modalities
+# ==========================================================
+
+modalities:
+
+  ecg: true
+
+  eda: true
+
+  eeg: true
+
+  emg: true
+
+  resp: true
+
+  bpm: true
+
+  eye: true
+
+  audio: true
+
+  video: true
+
+  text: true
+
+
+# ==========================================================
+# Continuous Labels
+# ==========================================================
+
+continuous_labels:
+
+  - valence
+
+  - arousal
+
+  - dominance
+
+  - stress
+
+  - workload
+
+  - fatigue
+
+
+# ==========================================================
+# Discrete Labels
+# ==========================================================
+
+discrete_labels:
+
+  - emotion_class
+
+  - stress_class
+
+  - workload_class
+
+  - alertness_class
+
+  - drowsiness_class
+
+
+# ==========================================================
+# Recognition Task
+# ==========================================================
+
+recognition:
+
+  enabled: true
+
+
+# ==========================================================
+# Forecasting Task
+# ==========================================================
+
+forecasting:
+
+  enabled: true
+
+  horizon: 25
+
+
+# ==========================================================
+# History Configuration
+# ==========================================================
+
+history:
+
+  enabled: true
+
+  history_length: 50
+
+  use_continuous_history: true
+
+  use_discrete_history: true
+
+  source: "ground_truth"
+
+  future_inference_source: "prediction"
+
+
+# ==========================================================
+# Model
+# ==========================================================
+
+model:
+
+  name: "baseline_b1"
+
   emb_dim: 128
 
-  # Classical fusion bottleneck dimension
-  fusion_dim: 128
+  fusion_dim: 64
 
-  # Transformer d_model
   transformer_dim: 256
 
-  # Transformer hyperparameters
   num_heads: 4
+
   num_layers: 4
 
-  # Active modalities (REAL mode)
-  modalities:
-    audio: true
-    video: true
-    ecg: true
-    eda: true
-    text: false        # RECOLA → set false, SEWA → true
+  dropout: 0.1
+
+
+# ==========================================================
+# Recognition Head
+# ==========================================================
+
+recognition_head:
+
+  enabled: true
+
+
+# ==========================================================
+# Forecast Head
+# ==========================================================
+
+forecast_head:
+
+  enabled: true
+
+
+# ==========================================================
+# Training
+# ==========================================================
 
 training:
-  batch_size: 16
+
+  batch_size: 8
+
   epochs: 3
-  lr: 0.0001
-  weight_decay: 0.0
+
+  patience: 10
+
+  gradient_clip: 1.0
+
+  max_train_batches: 1000
+
+  max_val_batches: 200
+
+
+# ==========================================================
+# Optimizer
+# ==========================================================
+
+optimizer:
+
+  name: "adamw"
+
+  lr: 0.0003
+
+  weight_decay: 0.00001
+
+
+# ==========================================================
+# Scheduler
+# ==========================================================
+
+scheduler:
+
+  name: "reduce_on_plateau"
+
+  factor: 0.5
+
   patience: 3
-  device: "auto"      # CUDA if available, else CPU
+
+  min_lr: 0.000001
+
+
+# ==========================================================
+# Loss
+# ==========================================================
+
+loss:
+
+  alpha: 0.2
+
+  recognition_weight: 1.0
+
+  forecast_weight: 1.0
+
+
+# ==========================================================
+# Runtime
+# ==========================================================
+
+runtime:
+
+  device: "auto"
+
+  deterministic: true
+
+  seed: 42
+
+
+# ==========================================================
+# Logging
+# ==========================================================
 
 logging:
-  checkpoint_dir: "runs/baseline_b1/"
+
+  run_dir: "runs/baseline_b1"
+
+  save_best_only: true
+
+  save_history: true
+
+  save_config: true
+
   log_interval: 20

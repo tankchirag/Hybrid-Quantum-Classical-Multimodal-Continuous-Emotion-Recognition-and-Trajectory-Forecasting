@@ -1,134 +1,541 @@
 """
-Loss functions for multimodal continuous emotion recognition
-and trajectory forecasting.
+training.losses
+===============
 
-Includes:
-    - Concordance Correlation Coefficient (CCC) loss
-    - Mean Squared Error (MSE) loss
-    - Combined total loss for recognition + forecasting
+Unified Multi-Task Loss Framework
+
+Supports
+
+    • Recognition
+
+    • Forecasting
+
+Across
+
+    • Continuous Targets
+
+    • Discrete Targets
+
+Design Goals
+------------
+
+✓ Dataset Agnostic
+
+✓ Modality Agnostic
+
+✓ Label Agnostic
+
+✓ Continuous Labels
+
+✓ Discrete Labels
+
+✓ Recognition Compatible
+
+✓ Forecasting Compatible
+
+✓ Continuous Forecasting
+
+✓ Discrete Forecasting
+
+✓ Multi-Task Compatible
+
+✓ Future Proof
 """
+
+from __future__ import annotations
+
+from typing import Dict
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 
-def ccc_loss(pred: torch.Tensor, true: torch.Tensor) -> torch.Tensor:
-    """
-    Concordance Correlation Coefficient (CCC) loss.
+# ============================================================
+# CCC LOSS
+# ============================================================
 
-    Shape-agnostic:
-        - Works for (B, 2)
-        - Works for (B, T, 2)
-        - Works for (B, S, 2)
-
-    Strategy:
-        - Flatten all leading dimensions into one:
-              pred: (N, 2), true: (N, 2)
-          where N = B * T or B * S or B
-        - Compute CCC per dimension (valence, arousal)
-        - Return 1 - mean(CCC) as loss
-
-    Parameters
-    ----------
-    pred : Tensor
-        Predicted VA values, shape (..., 2).
-    true : Tensor
-        Ground-truth VA values, shape (..., 2).
-
-    Returns
-    -------
-    loss : Tensor
-        Scalar CCC loss (1 - CCC).
-    """
-    # Ensure same shape
-    assert pred.shape == true.shape, \
-        f"ccc_loss: shape mismatch pred {pred.shape} vs true {true.shape}"
-
-    # Flatten all but last dim (VA=2)
-    pred = pred.view(-1, pred.size(-1))   # (N, 2)
-    true = true.view(-1, true.size(-1))   # (N, 2)
-
-    # Means over N
-    pred_mean = pred.mean(dim=0, keepdim=True)   # (1, 2)
-    true_mean = true.mean(dim=0, keepdim=True)   # (1, 2)
-
-    # Variances over N
-    pred_var = pred.var(dim=0, unbiased=False, keepdim=True)  # (1, 2)
-    true_var = true.var(dim=0, unbiased=False, keepdim=True)  # (1, 2)
-
-    # Covariance over N
-    cov = ((pred - pred_mean) * (true - true_mean)).mean(dim=0, keepdim=True)  # (1, 2)
-
-    # CCC per dimension
-    ccc = 2 * cov / (pred_var + true_var + (pred_mean - true_mean) ** 2 + 1e-8)  # (1, 2)
-
-    # Loss = 1 - mean CCC over VA dims
-    loss = 1.0 - ccc.mean()
-    return loss
-
-
-def mse_loss(pred: torch.Tensor, true: torch.Tensor) -> torch.Tensor:
-    """
-    Standard Mean Squared Error (MSE) loss.
-
-    Parameters
-    ----------
-    pred : Tensor
-        Predicted values, shape (..., 2).
-    true : Tensor
-        Ground-truth values, shape (..., 2).
-
-    Returns
-    -------
-    loss : Tensor
-        Scalar MSE loss.
-    """
-    return nn.functional.mse_loss(pred, true)
-
-
-def total_loss(
-    rec_pred: torch.Tensor,
-    rec_true: torch.Tensor,
-    for_pred: torch.Tensor,
-    for_true: torch.Tensor,
-    alpha: float = 0.2,
-    lambda_for: float = 1.0,
+def ccc_loss(
+    pred: torch.Tensor,
+    target: torch.Tensor,
+    eps: float = 1e-8,
 ) -> torch.Tensor:
     """
-    Combined loss for recognition + forecasting.
-
-    Recognition:
-        - rec_pred, rec_true: (..., 2)
-        - Uses CCC + alpha * MSE
-
-    Forecasting:
-        - for_pred, for_true: (..., 2)
-        - Uses CCC + alpha * MSE, scaled by lambda_for
-
-    Parameters
-    ----------
-    rec_pred : Tensor
-        Recognition predictions (VA at t).
-    rec_true : Tensor
-        Recognition ground truth (VA at t).
-    for_pred : Tensor
-        Forecasting predictions (VA at t+1...t+S).
-    for_true : Tensor
-        Forecasting ground truth (VA at t+1...t+S).
-    alpha : float
-        Weight for MSE term in both recognition and forecasting.
-    lambda_for : float
-        Weight for the forecasting loss block.
-
-    Returns
-    -------
-    loss : Tensor
-        Scalar total loss.
+    Concordance Correlation Coefficient Loss.
     """
-    # Recognition loss
-    loss_rec = ccc_loss(rec_pred, rec_true) + alpha * mse_loss(rec_pred, rec_true)
 
-    # Forecasting loss
-    loss_for = ccc_loss(for_pred, for_true) + alpha * mse_loss(for_pred, for_true)
+    pred = pred.reshape(-1).float()
+    target = target.reshape(-1).float()
 
-    return loss_rec + lambda_for * loss_for
+    pred_mean = pred.mean()
+    target_mean = target.mean()
+
+    pred_var = pred.var(
+        unbiased=False
+    )
+
+    target_var = target.var(
+        unbiased=False
+    )
+
+    covariance = (
+        (pred - pred_mean)
+        *
+        (target - target_mean)
+    ).mean()
+
+    ccc = (
+
+        2.0
+        *
+        covariance
+
+    ) / (
+
+        pred_var
+        +
+        target_var
+        +
+        (pred_mean - target_mean) ** 2
+        +
+        eps
+
+    )
+
+    return 1.0 - ccc
+
+
+# ============================================================
+# CONTINUOUS LOSS
+# ============================================================
+
+class ContinuousLoss(
+    nn.Module,
+):
+    """
+    CCC + alpha * MSE
+    """
+
+    def __init__(
+        self,
+        alpha: float = 0.2,
+    ):
+        super().__init__()
+
+        self.alpha = alpha
+
+    def forward(
+        self,
+        pred: torch.Tensor,
+        target: torch.Tensor,
+    ) -> torch.Tensor:
+
+        loss_ccc = ccc_loss(
+            pred,
+            target,
+        )
+
+        loss_mse = F.mse_loss(
+            pred,
+            target,
+        )
+
+        return (
+
+            loss_ccc
+
+            +
+
+            self.alpha
+            *
+            loss_mse
+        )
+
+
+# ============================================================
+# DISCRETE LOSS
+# ============================================================
+
+class DiscreteLoss(
+    nn.Module,
+):
+    """
+    Cross Entropy Loss.
+
+    Handles
+
+        Recognition
+
+        Forecasting
+
+    for
+
+        (B,C)
+
+        (B,T,C)
+
+        (B,S,C)
+    """
+
+    def __init__(self):
+        super().__init__()
+
+        self.ce = (
+            nn.CrossEntropyLoss()
+        )
+
+    def forward(
+        self,
+        logits: torch.Tensor,
+        target: torch.Tensor,
+    ) -> torch.Tensor:
+
+        num_classes = logits.size(-1)
+
+        logits = logits.reshape(
+            -1,
+            num_classes,
+        )
+
+        target = target.reshape(
+            -1
+        )
+
+        return self.ce(
+            logits,
+            target.long(),
+        )
+
+
+# ============================================================
+# UNIFIED LOSS
+# ============================================================
+
+class UnifiedMultiTaskLoss(
+    nn.Module,
+):
+    """
+    Unified loss for
+
+        Recognition Continuous
+
+        Recognition Discrete
+
+        Forecast Continuous
+
+        Forecast Discrete
+    """
+
+    def __init__(
+        self,
+        alpha: float = 0.2,
+        recognition_weight: float = 1.0,
+        forecast_weight: float = 1.0,
+    ):
+        super().__init__()
+
+        self.continuous_loss = (
+            ContinuousLoss(
+                alpha=alpha
+            )
+        )
+
+        self.discrete_loss = (
+            DiscreteLoss()
+        )
+
+        self.recognition_weight = (
+            recognition_weight
+        )
+
+        self.forecast_weight = (
+            forecast_weight
+        )
+
+    # --------------------------------------------------------
+    # Utilities
+    # --------------------------------------------------------
+
+    def _infer_device(
+        self,
+        outputs: Dict,
+    ):
+
+        for task_name in [
+
+            "recognition",
+
+            "forecasting",
+
+        ]:
+
+            if task_name not in outputs:
+                continue
+
+            for target_type in [
+
+                "continuous",
+
+                "discrete",
+
+            ]:
+
+                if (
+                    target_type
+                    not in outputs[
+                        task_name
+                    ]
+                ):
+                    continue
+
+                for tensor in outputs[
+                    task_name
+                ][
+                    target_type
+                ].values():
+
+                    return tensor.device
+
+        return torch.device(
+            "cpu"
+        )
+
+    # --------------------------------------------------------
+    # Forward
+    # --------------------------------------------------------
+
+    def forward(
+        self,
+        outputs: Dict,
+        recognition_targets: Dict,
+        forecast_targets: Dict,
+    ) -> Dict[str, torch.Tensor]:
+
+        device = self._infer_device(
+            outputs
+        )
+
+        recognition_loss = torch.tensor(
+            0.0,
+            device=device,
+        )
+
+        forecasting_loss = torch.tensor(
+            0.0,
+            device=device,
+        )
+
+        # ====================================================
+        # RECOGNITION CONTINUOUS
+        # ====================================================
+
+        for (
+            name,
+            pred,
+        ) in outputs[
+            "recognition"
+        ][
+            "continuous"
+        ].items():
+
+            if (
+                name
+                not in
+                recognition_targets[
+                    "continuous"
+                ]
+            ):
+                continue
+
+            recognition_loss += (
+
+                self.continuous_loss(
+
+                    pred,
+
+                    recognition_targets[
+                        "continuous"
+                    ][
+                        name
+                    ],
+                )
+            )
+
+        # ====================================================
+        # RECOGNITION DISCRETE
+        # ====================================================
+
+        for (
+            name,
+            logits,
+        ) in outputs[
+            "recognition"
+        ][
+            "discrete"
+        ].items():
+
+            if (
+                name
+                not in
+                recognition_targets[
+                    "discrete"
+                ]
+            ):
+                continue
+
+            recognition_loss += (
+
+                self.discrete_loss(
+
+                    logits,
+
+                    recognition_targets[
+                        "discrete"
+                    ][
+                        name
+                    ],
+                )
+            )
+
+        # ====================================================
+        # FORECAST CONTINUOUS
+        # ====================================================
+
+        for (
+            name,
+            pred,
+        ) in outputs[
+            "forecasting"
+        ][
+            "continuous"
+        ].items():
+
+            if (
+                name
+                not in
+                forecast_targets[
+                    "continuous"
+                ]
+            ):
+                continue
+
+            forecasting_loss += (
+
+                self.continuous_loss(
+
+                    pred,
+
+                    forecast_targets[
+                        "continuous"
+                    ][
+                        name
+                    ],
+                )
+            )
+
+        # ====================================================
+        # FORECAST DISCRETE
+        # ====================================================
+
+        for (
+            name,
+            logits,
+        ) in outputs[
+            "forecasting"
+        ][
+            "discrete"
+        ].items():
+
+            if (
+                name
+                not in
+                forecast_targets[
+                    "discrete"
+                ]
+            ):
+                continue
+
+            forecasting_loss += (
+
+                self.discrete_loss(
+
+                    logits,
+
+                    forecast_targets[
+                        "discrete"
+                    ][
+                        name
+                    ],
+                )
+            )
+
+        # ====================================================
+        # TOTAL
+        # ====================================================
+
+        total_loss = (
+
+                    self.recognition_weight
+                    *
+                    recognition_loss
+
+                    +
+
+                    self.forecast_weight
+                    *
+                    forecasting_loss
+                )
+
+        # print("\n")
+        # print("=" * 60)
+        # print("LOSS DEBUG")
+        # print("=" * 60)
+
+        # print(
+        #     "recognition_loss =",
+        #     recognition_loss
+        # )
+
+        # print(
+        #     "recognition_loss.requires_grad =",
+        #     recognition_loss.requires_grad
+        # )
+
+        # print()
+
+        # print(
+        #     "forecasting_loss =",
+        #     forecasting_loss
+        # )
+
+        # print(
+        #     "forecasting_loss.requires_grad =",
+        #     forecasting_loss.requires_grad
+        # )
+
+        # print()
+
+        # print(
+        #     "total_loss =",
+        #     total_loss
+        # )
+
+        # print(
+        #     "total_loss.requires_grad =",
+        #     total_loss.requires_grad
+        # )
+
+        # print("=" * 60)
+        # print()
+
+        return {
+
+            "total_loss":
+                total_loss,
+
+            "recognition_loss":
+                recognition_loss,
+
+            "forecasting_loss":
+                forecasting_loss,
+        }

@@ -1,0 +1,263 @@
+# ==========================================================
+# Baseline B3
+# Parameterized Quantum Circuit Fusion Baseline
+# ==========================================================
+
+experiment:
+
+  name: "baseline_b3"
+
+  description: >
+    Parameterized quantum circuit fusion baseline for
+    multimodal affective computing, recognition,
+    and forecasting.
+
+# ==========================================================
+# Dataset
+# ==========================================================
+
+dataset:
+
+  name: "ulm_tsst_synthetic"
+
+  synthetic: true
+
+  num_samples: 200
+
+  duration_seconds: 300
+
+  label_sampling_rate: 25
+
+# ==========================================================
+# Modalities
+# ==========================================================
+
+modalities:
+
+  audio: true
+
+  video: true
+
+  ecg: true
+
+  eda: true
+
+  eeg: true
+
+  emg: true
+
+  resp: true
+
+  bpm: true
+
+  eye: true
+
+  text: true
+
+# ==========================================================
+# Continuous Labels
+# ==========================================================
+
+continuous_labels:
+
+  - valence
+
+  - arousal
+
+  - dominance
+
+  - stress
+
+  - workload
+
+  - fatigue
+
+# ==========================================================
+# Discrete Labels
+# ==========================================================
+
+discrete_labels:
+
+  - emotion_class
+
+  - stress_class
+
+  - workload_class
+
+  - alertness_class
+
+  - drowsiness_class
+
+  - kss_score
+
+# ==========================================================
+# Tasks
+# ==========================================================
+
+recognition:
+
+  enabled: true
+
+forecasting:
+
+  enabled: true
+
+  horizon: 25
+
+# ==========================================================
+# History Configuration
+# ==========================================================
+
+history:
+
+  enabled: true
+
+  history_length: 50
+
+  use_continuous_history: true
+
+  use_discrete_history: true
+
+  source: "ground_truth"
+
+  future_inference_source: "prediction"
+
+# ==========================================================
+# Model
+# ==========================================================
+
+model:
+
+  name: "baseline_b3"
+
+  emb_dim: 128
+
+  proj_dim: 16
+
+  fused_dim: 64
+
+  transformer_dim: 256
+
+  num_heads: 4
+
+  num_layers: 4
+
+  dropout: 0.1
+
+# ==========================================================
+# PQC Fusion
+# ==========================================================
+
+pqc:
+
+  enabled: true
+
+  num_qubits: 4
+
+  depth: 3
+
+  shots: null
+
+  backend: "lightning.qubit"
+
+  encoding: "angle"
+
+  entanglement: "strong"
+
+# ==========================================================
+# Recognition Head
+# ==========================================================
+
+recognition_head:
+
+  enabled: true
+
+# ==========================================================
+# Forecast Head
+# ==========================================================
+
+forecast_head:
+
+  enabled: true
+
+  horizon: 25
+
+# ==========================================================
+# Training
+# ==========================================================
+
+training:
+
+  batch_size: 4
+
+  epochs: 100
+
+  patience: 10
+
+  gradient_clip: 1.0
+
+# ==========================================================
+# Optimizer
+# ==========================================================
+
+optimizer:
+
+  name: "adamw"
+
+  lr: 0.0001
+
+  weight_decay: 0.00001
+
+# ==========================================================
+# Scheduler
+# ==========================================================
+
+scheduler:
+
+  name: "reduce_on_plateau"
+
+  factor: 0.5
+
+  patience: 3
+
+  min_lr: 0.000001
+
+# ==========================================================
+# Loss
+# ==========================================================
+
+loss:
+
+  alpha: 0.2
+
+  recognition_weight: 1.0
+
+  forecast_weight: 1.0
+
+# ==========================================================
+# Runtime
+# ==========================================================
+
+runtime:
+
+  device: "auto"
+
+  deterministic: true
+
+  seed: 42
+
+# ==========================================================
+# Logging
+# ==========================================================
+
+logging:
+
+  run_dir: "runs/baseline_b3"
+
+  save_best_only: true
+
+  save_history: true
+
+  save_config: true
+
+  log_interval: 20

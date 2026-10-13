@@ -1,223 +1,463 @@
+"""
+models.wrappers.baseline_b2
+===========================
+
+Baseline B2
+
+Concatenation Fusion Baseline
+
+Pipeline
+--------
+
+Modalities
+    ↓
+
+Feature Extractors
+    ↓
+
+Tokenizer
+    ↓
+
+Unified Concatenation Fusion
+    ↓
+
+Transformer Encoder-Decoder
+    ↓
+
+Recognition Head
+
+Forecasting Head
+
+Scientific Purpose
+------------------
+
+Evaluates whether simple projection +
+concatenation fusion can achieve
+competitive performance relative to
+attention-based fusion.
+
+Design Goals
+------------
+
+✓ Dataset Agnostic
+
+✓ Modality Agnostic
+
+✓ Label Agnostic
+
+✓ Continuous Labels
+
+✓ Discrete Labels
+
+✓ Recognition Compatible
+
+✓ Forecasting Compatible
+
+✓ Config Driven
+
+✓ Future Proof
+"""
+
+from __future__ import annotations
+
+from types import SimpleNamespace
+
 import torch
 import torch.nn as nn
 
-from models.encoders.multimodal_feature_extractors import MultimodalFeatureExtractors
-from models.fusion.unified_concat_fusion import UnifiedConcatFusion
-from models.temporal.transformer_ed import TransformerEncoderDecoder
-from models.heads.recognition_head import RecognitionHead
-from models.heads.forecasting_head import ForecastingHead
+from models.encoders.multimodal_feature_extractors_v2 import (
+    MultimodalFeatureExtractorsV2,
+)
+
+from models.tokenizers.tokenizer import (
+    Tokenizer,
+)
+
+from models.fusion.unified_concat_fusion import (
+    UnifiedConcatFusion,
+)
+
+from models.temporal.transformer_ed import (
+    TransformerEncoderDecoder,
+)
+
+from models.heads.recognition_head import (
+    RecognitionHead,
+)
+
+from models.heads.forecasting_head import (
+    ForecastingHead,
+)
 
 
 class BaselineB2(nn.Module):
     """
-    BaselineB2
-    ----------
-    Capacity-controlled multimodal baseline using:
-
-        1. Multimodal feature extractors (shared with all baselines)
-        2. UnifiedConcatFusion (per-modality 128→proj_dim projections + concatenation)
-        3. Linear projection fused_dim → transformer_dim (256)
-        4. Transformer Encoder–Decoder (conditioned on VA history)
-        5. Recognition head (frame-wise VA_t)
-        6. Forecasting head (future VA trajectory)
-
-    The number of active modalities depends on the dataset:
-        - RECOLA: audio, video, ecg, eda
-        - SEWA:   audio, video, text
-        - Combined: audio, video, ecg, eda, text
-
-    UnifiedConcatFusion computes:
-        fused_dim = (#active_modalities) × proj_dim
-
-    We then project:
-        fused_dim → transformer_dim (256)
-    to keep Transformer capacity identical across baselines.
+    Projection + Concatenation Fusion Baseline.
     """
 
     def __init__(
         self,
-        emb_dim: int = 128,
-        proj_dim: int = 64,
-        transformer_dim: int = 256,
-        num_heads: int = 2,
-        num_layers: int = 2,
-        target_seq_len: int = 50,
-        forecast_horizon: int = 10,
-        synthetic: bool = True,
-        modalities: dict | None = None,
+        config,
     ):
-        """
-        Parameters
-        ----------
-        emb_dim : int
-            Dimensionality of each modality encoder output (default: 128).
-        proj_dim : int
-            Dimensionality after per-modality projection (default: 64).
-        transformer_dim : int
-            Hidden size of the shared Transformer (default: 256).
-        num_heads : int
-            Number of attention heads in the Transformer.
-        num_layers : int
-            Number of encoder and decoder layers in the Transformer.
-        target_seq_len : int
-            Number of historical frames used as input.
-        forecast_horizon : int
-            Number of future frames to forecast.
-        synthetic : bool
-            Whether to use synthetic dummy data in the feature extractors.
-        modalities : dict
-            Dictionary of active modalities, e.g.
-                {
-                    "audio": True/False,
-                    "video": True/False,
-                    "ecg":   True/False,
-                    "eda":   True/False,
-                    "text":  True/False,
-                }
-        """
         super().__init__()
 
-        if modalities is None:
-            raise ValueError("BaselineB2: 'modalities' dict must be provided.")
+        # ==================================================
+        # Config Handling
+        # ==================================================
 
-        self.modalities = modalities
-        self.target_seq_len = target_seq_len
-        self.forecast_horizon = forecast_horizon
+        if isinstance(
+            config,
+            dict,
+        ):
+            config = SimpleNamespace(
+                **config
+            )
 
-        # ---------------------------------------------------------
-        # 1. Multimodal Feature Extractors
-        # ---------------------------------------------------------
-        self.extractors = MultimodalFeatureExtractors(
-            emb_dim=emb_dim,
-            synthetic=synthetic,
-            target_seq_len=target_seq_len,
-            include_text=self.modalities["text"],
+        self.config = config
+
+        # ==================================================
+        # Modalities
+        # ==================================================
+
+        self.modalities = getattr(
+            config,
+            "modalities",
+            {},
         )
 
-        # ---------------------------------------------------------
-        # 2. Unified Concatenation Fusion
-        #    Modality usage is driven by the dataset's modality flags.
-        # ---------------------------------------------------------
-        self.fusion = UnifiedConcatFusion(
-            use_audio=self.modalities["audio"],
-            use_video=self.modalities["video"],
-            use_ecg=self.modalities["ecg"],
-            use_eda=self.modalities["eda"],
-            use_text=self.modalities["text"],
-            in_dim=emb_dim,
-            proj_dim=proj_dim,
-            expected_out_dim=None,   # dynamic; no hard check
-        )
+        # ==================================================
+        # Targets
+        # ==================================================
 
-        # True fused_dim from fusion module (e.g. 192, 256, 320)
-        fused_dim = self.fusion.out_dim
+        if hasattr(
+            config,
+            "continuous_targets",
+        ):
+            self.continuous_targets = (
+                config.continuous_targets
+            )
 
-        # ---------------------------------------------------------
-        # 2.5 Project fused_dim → transformer_dim (256)
-        # ---------------------------------------------------------
-        self.fused_proj = nn.Linear(fused_dim, transformer_dim)
+        elif hasattr(
+            config,
+            "continuous_labels",
+        ):
+            self.continuous_targets = list(
+                config.continuous_labels
+            )
 
-        # ---------------------------------------------------------
-        # 3. Transformer Encoder–Decoder
-        # ---------------------------------------------------------
-        self.temporal_model = TransformerEncoderDecoder(
-            d_model=transformer_dim,
-            nhead=num_heads,
-            num_encoder_layers=num_layers,
-            num_decoder_layers=num_layers,
-            dim_feedforward=transformer_dim * 4,
-            dropout=0.1,
-            forecast_horizon=forecast_horizon,
-        )
-
-        # ---------------------------------------------------------
-        # 4. Recognition Head
-        # ---------------------------------------------------------
-        self.recognition_head = RecognitionHead(
-            input_dim=transformer_dim,
-            output_dim=2,
-        )
-
-        # ---------------------------------------------------------
-        # 5. Forecasting Head
-        # ---------------------------------------------------------
-        self.forecasting_head = ForecastingHead(
-            input_dim=transformer_dim,
-            output_dim=2,
-        )
-
-    def forward(self, batch):
-        """
-        Forward pass for Baseline B2.
-
-        Parameters
-        ----------
-        batch : dict
-            Must contain:
-                - raw modality inputs (audio, video, ecg, eda, text/None)
-                - "va": Tensor of shape (B, T_va, 2)
-
-        Returns
-        -------
-        dict
-            {
-                "va_pred":      (B, T_align, 2),
-                "va_future":    (B, S, 2),
-                "va_hist":      (B, T_align, 2),
-                "va_future_gt": (B, S, 2),
-            }
-        """
-
-        # ---------------------------------------------------------
-        # 0. VA history and future
-        # ---------------------------------------------------------
-        va_full = batch["va"]          # (B, T_va, 2)
-        B, T_va, _ = va_full.shape
-        S = self.forecast_horizon
-
-        if S <= T_va:
-            va_future_gt = va_full[:, -S:, :]
         else:
-            va_future_gt = va_full[:, -1:, :].repeat(1, S, 1)
+            self.continuous_targets = []
 
-        # ---------------------------------------------------------
-        # 1. Extract modality embeddings
-        # ---------------------------------------------------------
-        emb_dict = self.extractors(batch)   # each: (B, T, emb_dim) or None
+        if hasattr(
+            config,
+            "discrete_targets",
+        ):
+            self.discrete_targets = (
+                config.discrete_targets
+            )
 
-        # ---------------------------------------------------------
-        # 2. Fusion → (B, T, fused_dim)
-        # ---------------------------------------------------------
-        fused_raw = self.fusion(emb_dict)
+        elif hasattr(
+            config,
+            "discrete_labels",
+        ):
+            self.discrete_targets = {}
 
-        # ---------------------------------------------------------
-        # 2.5 Project fused_dim → transformer_dim (256)
-        # ---------------------------------------------------------
-        fused = self.fused_proj(fused_raw)  # (B, T, transformer_dim)
+        else:
+            self.discrete_targets = {}
 
-        # ---------------------------------------------------------
-        # 3. Temporal alignment
-        # ---------------------------------------------------------
-        T_fused = fused.size(1)
-        T_align = min(T_fused, T_va)
+        # ==================================================
+        # Model Parameters
+        # ==================================================
 
-        fused_aligned = fused[:, -T_align:, :]   # (B, T_align, d)
-        va_hist = va_full[:, -T_align:, :]       # (B, T_align, 2)
+        model_cfg = getattr(
+            config,
+            "model",
+            config,
+        )
 
-        # ---------------------------------------------------------
-        # 4. Transformer
-        # ---------------------------------------------------------
-        enc_out, dec_out = self.temporal_model(fused_aligned, va_hist)
+        self.embedding_dim = getattr(
+            model_cfg,
+            "emb_dim",
+            128,
+        )
 
-        # ---------------------------------------------------------
-        # 5. Recognition + Forecasting
-        # ---------------------------------------------------------
-        va_pred = self.recognition_head(enc_out)       # (B, T_align, 2)
-        va_future_pred = self.forecasting_head(dec_out)  # (B, S, 2)
+        self.proj_dim = getattr(
+            model_cfg,
+            "proj_dim",
+            64,
+        )
+
+        self.transformer_dim = getattr(
+            model_cfg,
+            "transformer_dim",
+            256,
+        )
+
+        self.num_heads = getattr(
+            model_cfg,
+            "num_heads",
+            4,
+        )
+
+        self.num_layers = getattr(
+            model_cfg,
+            "num_layers",
+            4,
+        )
+
+        self.dropout = getattr(
+            model_cfg,
+            "dropout",
+            0.1,
+        )
+
+        # ==================================================
+        # Forecast
+        # ==================================================
+
+        self.forecast_horizon = getattr(
+            config.forecasting,
+            "horizon",
+            25,
+        )
+
+        # ==================================================
+        # History
+        # ==================================================
+
+        self.history_dim = getattr(
+            config,
+            "history_dim",
+            0,
+        )
+
+        # ==================================================
+        # Feature Extractors
+        # ==================================================
+
+        self.extractors = (
+            MultimodalFeatureExtractorsV2(
+
+                embedding_dim=
+                self.embedding_dim,
+
+                modalities=
+                self.modalities,
+            )
+        )
+
+        # ==================================================
+        # Tokenizer
+        # ==================================================
+
+        self.tokenizer = (
+            Tokenizer(
+                embedding_dim=
+                self.embedding_dim,
+            )
+        )
+
+        # ==================================================
+        # Concatenation Fusion
+        # ==================================================
+
+        self.fusion = (
+            UnifiedConcatFusion(
+
+                emb_dim=
+                self.embedding_dim,
+
+                proj_dim=
+                self.proj_dim,
+
+                transformer_dim=
+                self.transformer_dim,
+            )
+        )
+
+        # ==================================================
+        # Transformer
+        # ==================================================
+
+        self.temporal_model = (
+            TransformerEncoderDecoder(
+
+                d_model=
+                self.transformer_dim,
+
+                nhead=
+                self.num_heads,
+
+                num_encoder_layers=
+                self.num_layers,
+
+                num_decoder_layers=
+                self.num_layers,
+
+                dim_feedforward=
+                4 * self.transformer_dim,
+
+                dropout=
+                self.dropout,
+
+                forecast_horizon=
+                self.forecast_horizon,
+
+                history_dim=
+                self.history_dim,
+            )
+        )
+
+        # ==================================================
+        # Recognition Head
+        # ==================================================
+
+        self.recognition_head = (
+            RecognitionHead(
+
+                continuous_targets=
+                self.continuous_targets,
+
+                discrete_targets=
+                self.discrete_targets,
+
+                input_dim=
+                self.transformer_dim,
+            )
+        )
+
+        # ==================================================
+        # Forecast Head
+        # ==================================================
+
+        self.forecasting_head = (
+            ForecastingHead(
+
+                continuous_targets=
+                self.continuous_targets,
+
+                discrete_targets=
+                self.discrete_targets,
+
+                input_dim=
+                self.transformer_dim,
+            )
+        )
+
+    # ======================================================
+    # Forward
+    # ======================================================
+
+    def forward(
+        self,
+        batch,
+    ):
+
+        modalities = batch[
+            "modalities"
+        ]
+
+        embeddings = (
+            self.extractors(
+                modalities
+            )
+        )
+
+        tokens = (
+            self.tokenizer(
+                embeddings
+            )
+        )
+
+        fused = (
+            self.fusion(
+                tokens
+            )
+        )
+
+        label_history = batch.get(
+            "label_history",
+            None,
+        )
+
+        (
+            encoder_outputs,
+            decoder_outputs,
+        ) = self.temporal_model(
+
+            fused=fused,
+
+            label_history=
+            label_history,
+        )
+
+        recognition_outputs = (
+            self.recognition_head(
+                encoder_outputs
+            )
+        )
+
+        forecasting_outputs = (
+            self.forecasting_head(
+                decoder_outputs
+            )
+        )
 
         return {
-            "va_pred": va_pred,
-            "va_future": va_future_pred,
-            "va_hist": va_hist,
-            "va_future_gt": va_future_gt,
+
+            "recognition":
+                recognition_outputs,
+
+            "forecasting":
+                forecasting_outputs,
+
+            "encoder_outputs":
+                encoder_outputs,
+
+            "decoder_outputs":
+                decoder_outputs,
+
+            "tokens":
+                tokens,
+
+            "fused":
+                fused,
+        }
+
+    # ======================================================
+    # Metadata
+    # ======================================================
+
+    def summary(
+        self,
+    ):
+
+        return {
+
+            "model":
+                "BaselineB2",
+
+            "fusion":
+                "UnifiedConcatFusion",
+
+            "embedding_dim":
+                self.embedding_dim,
+
+            "proj_dim":
+                self.proj_dim,
+
+            "transformer_dim":
+                self.transformer_dim,
+
+            "forecast_horizon":
+                self.forecast_horizon,
+
+            "continuous_targets":
+                self.continuous_targets,
+
+            "discrete_targets":
+                self.discrete_targets,
+
+            "history_dim":
+                self.history_dim,
         }

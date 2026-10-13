@@ -1,70 +1,322 @@
-# ============================================================
-#  Proposed Method: QSAL (Quantum Self‑Attention Layer)
-#  Unified Configuration (REAL + SYNTHETIC)
-#  Fully aligned with updated QSAL pipeline
-# ============================================================
+# ==========================================================
+# QSAL
+# Quantum Self-Attention Learning
+# Thesis Architecture
+# ==========================================================
 
-model:
-  name: "QSAL"
+experiment:
 
-  # Per‑modality embedding dimension (from feature extractors)
-  emb_dim: 128
+  name: "qsal"
 
-  # Classical projection before QSAL (unused but kept for compatibility)
-  proj_dim: 64
+  description: >
+    Quantum Self-Attention Learning framework for
+    multimodal affective computing, recognition,
+    forecasting, temporal modelling, and future
+    state prediction.
 
-  # Transformer d_model
-  transformer_dim: 256
 
-  # Transformer hyperparameters
-  num_heads: 4
-  num_layers: 4
-
-  # Temporal sequence length T (RECOLA=300, SEWA≈50)
-  target_seq_len: 50
-
-  # Active modalities (REAL + SYNTHETIC)
-  modalities:
-    audio: true
-    video: false
-    ecg: true
-    eda: true
-    text: false        # RECOLA has no text modality
-
-  # QSAL quantum configuration
-  qsal:
-    num_qubits: 4          # QSAL PQC qubits
-    circuit_depth: 2       # PQC depth
-    fusion_dim: 256        # QSALFusion intermediate dimension
-    num_heads: 4           # Gaussian attention heads
-
-# ============================================================
-#  Dataset Configuration
-# ============================================================
+# ==========================================================
+# Dataset
+# ==========================================================
 
 dataset:
-  name: "synthetic"        # "recola", "sewa", or "synthetic"
-  synthetic: true          # QSAL uses synthetic mode
-  target_seq_len: 50       # must match model.target_seq_len
-  num_samples: 200         # synthetic dataset size
-  forecast_horizon: 25     # S future steps (1 sec @ 25 Hz)
 
-# ============================================================
-#  Training Configuration
-# ============================================================
+  name: "ulm_tsst_v1"
+
+  type: "disk"
+
+  config_path: "configs/datasets/ulm_tsst_v1.yaml"
+
+  root_dir: "data/generated/ulm_tsst_v1"
+
+  train_split: "train"
+
+  val_split: "val"
+
+  test_split: "test"
+
+
+# ==========================================================
+# Modalities
+# ==========================================================
+
+modalities:
+
+  audio: true
+
+  video: true
+
+  ecg: true
+
+  eda: true
+
+  eeg: true
+
+  emg: true
+
+  resp: true
+
+  bpm: true
+
+  eye: true
+
+  text: true
+
+
+# ==========================================================
+# Continuous Labels
+# ==========================================================
+
+continuous_labels:
+
+  - valence
+
+  - arousal
+
+  - dominance
+
+  - stress
+
+  - workload
+
+  - fatigue
+
+
+# ==========================================================
+# Discrete Labels
+# ==========================================================
+
+discrete_labels:
+
+  - emotion_class
+
+  - stress_class
+
+  - workload_class
+
+  - alertness_class
+
+  - drowsiness_class
+
+
+# ==========================================================
+# Recognition
+# ==========================================================
+
+recognition:
+
+  enabled: true
+
+
+# ==========================================================
+# Forecasting
+# ==========================================================
+
+forecasting:
+
+  enabled: true
+
+  horizon: 25
+
+
+# ==========================================================
+# History Configuration
+# ==========================================================
+
+history:
+
+  enabled: true
+
+  history_length: 50
+
+  use_continuous_history: true
+
+  use_discrete_history: true
+
+  source: "ground_truth"
+
+  future_inference_source: "prediction"
+
+
+# ==========================================================
+# History Encoder
+# Future Extension
+# ==========================================================
+
+history_encoder:
+
+  enabled: false
+
+  type: "gru"
+
+  hidden_dim: 128
+
+  num_layers: 2
+
+  bidirectional: false
+
+
+# ==========================================================
+# State Memory
+# Future Extension
+# ==========================================================
+
+state_memory:
+
+  enabled: false
+
+  memory_length: 50
+
+
+# ==========================================================
+# QSAL Model
+# ==========================================================
+
+model:
+
+  name: "qsal"
+
+  emb_dim: 128
+
+  proj_dim: 64
+
+  transformer_dim: 256
+
+  num_heads: 4
+
+  num_layers: 4
+
+  dropout: 0.1
+
+
+# ==========================================================
+# Quantum Self-Attention
+# ==========================================================
+
+qsal:
+
+  enabled: true
+
+  num_qubits: 4
+
+  circuit_depth: 3
+
+  fusion_dim: 256
+
+  num_heads: 4
+
+  backend: "lightning.qubit"
+
+  encoding: "angle"
+
+  entanglement: "strong"
+
+  shots: null
+
+
+# ==========================================================
+# Recognition Head
+# ==========================================================
+
+recognition_head:
+
+  enabled: true
+
+
+# ==========================================================
+# Forecast Head
+# ==========================================================
+
+forecast_head:
+
+  enabled: true
+
+
+# ==========================================================
+# Training
+# ==========================================================
 
 training:
-  batch_size: 4
-  epochs: 1
-  lr: 0.0003
-  weight_decay: 0.0
-  patience: 5
-  device: "cpu"
 
-# ============================================================
-#  Logging Configuration
-# ============================================================
+  batch_size: 8
+
+  epochs: 3
+
+  patience: 10
+
+  gradient_clip: 1.0
+
+  max_train_batches: 10
+
+  max_val_batches: 2
+
+
+# ==========================================================
+# Optimizer
+# ==========================================================
+
+optimizer:
+
+  name: "adamw"
+
+  lr: 0.0003
+
+  weight_decay: 0.00001
+
+
+# ==========================================================
+# Scheduler
+# ==========================================================
+
+scheduler:
+
+  name: "reduce_on_plateau"
+
+  factor: 0.5
+
+  patience: 3
+
+  min_lr: 0.000001
+
+
+# ==========================================================
+# Loss
+# ==========================================================
+
+loss:
+
+  alpha: 0.2
+
+  recognition_weight: 1.0
+
+  forecast_weight: 1.0
+
+
+# ==========================================================
+# Runtime
+# ==========================================================
+
+runtime:
+
+  device: "auto"
+
+  deterministic: true
+
+  seed: 42
+
+
+# ==========================================================
+# Logging
+# ==========================================================
 
 logging:
-  run_dir: "runs/qsal/"
+
+  run_dir: "runs/qsal"
+
+  save_best_only: true
+
+  save_history: true
+
+  save_config: true
+
   log_interval: 20

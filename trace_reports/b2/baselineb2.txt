@@ -1,0 +1,180 @@
+================================================================================
+BaselineB2 ARCHITECTURE AUDIT
+================================================================================
+
+CONFIGURATION
+--------------------------------------------------------------------------------
+History Length: 50
+Forecast Horizon: 25
+Projection Dimension: 64
+Transformer Dimension: 256
+
+--------------------------------------------------------------------------------
+STAGE    : Raw Modalities
+MODULE   : audio
+INPUT    : -
+OUTPUT   : (1, 50, 2)
+PURPOSE  : Synchronized input modality
+STATUS   : PASS
+
+--------------------------------------------------------------------------------
+STAGE    : Raw Modalities
+MODULE   : bpm
+INPUT    : -
+OUTPUT   : (1, 50, 1)
+PURPOSE  : Synchronized input modality
+STATUS   : PASS
+
+--------------------------------------------------------------------------------
+STAGE    : Raw Modalities
+MODULE   : ecg
+INPUT    : -
+OUTPUT   : (1, 50, 1)
+PURPOSE  : Synchronized input modality
+STATUS   : PASS
+
+--------------------------------------------------------------------------------
+STAGE    : Raw Modalities
+MODULE   : eda
+INPUT    : -
+OUTPUT   : (1, 50, 1)
+PURPOSE  : Synchronized input modality
+STATUS   : PASS
+
+--------------------------------------------------------------------------------
+STAGE    : Raw Modalities
+MODULE   : eeg
+INPUT    : -
+OUTPUT   : (1, 50, 1)
+PURPOSE  : Synchronized input modality
+STATUS   : PASS
+
+--------------------------------------------------------------------------------
+STAGE    : Raw Modalities
+MODULE   : emg
+INPUT    : -
+OUTPUT   : (1, 50, 1)
+PURPOSE  : Synchronized input modality
+STATUS   : PASS
+
+--------------------------------------------------------------------------------
+STAGE    : Raw Modalities
+MODULE   : eye
+INPUT    : -
+OUTPUT   : (1, 50, 2)
+PURPOSE  : Synchronized input modality
+STATUS   : PASS
+
+--------------------------------------------------------------------------------
+STAGE    : Raw Modalities
+MODULE   : resp
+INPUT    : -
+OUTPUT   : (1, 50, 1)
+PURPOSE  : Synchronized input modality
+STATUS   : PASS
+
+--------------------------------------------------------------------------------
+STAGE    : Raw Modalities
+MODULE   : text
+INPUT    : -
+OUTPUT   : (1, 50, 2)
+PURPOSE  : Synchronized input modality
+STATUS   : PASS
+
+--------------------------------------------------------------------------------
+STAGE    : Raw Modalities
+MODULE   : video
+INPUT    : -
+OUTPUT   : (1, 50, 2)
+PURPOSE  : Synchronized input modality
+STATUS   : PASS
+
+--------------------------------------------------------------------------------
+STAGE    : Runtime
+MODULE   : MultimodalFeatureExtractorsV2
+INPUT    : [{'audio': (1, 50, 2), 'bpm': (1, 50, 1), 'ecg': (1, 50, 1), 'eda': (1, 50, 1), 'eeg': (1, 50, 1), 'emg': (1, 50, 1), 'eye': (1, 50, 2), 'resp': (1, 50, 1), 'text': (1, 50, 2), 'video': (1, 50, 2)}]
+OUTPUT   : {'ecg': (1, 50, 128), 'eda': (1, 50, 128), 'eeg': (1, 50, 128), 'emg': (1, 50, 128), 'resp': (1, 50, 128), 'bpm': (1, 50, 128), 'eye': (1, 50, 128), 'audio': (1, 50, 128), 'video': (1, 50, 128), 'text': (1, 50, 128)}
+PURPOSE  : Runtime module execution
+STATUS   : PASS
+
+--------------------------------------------------------------------------------
+STAGE    : Runtime
+MODULE   : Tokenizer
+INPUT    : [{'ecg': (1, 50, 128), 'eda': (1, 50, 128), 'eeg': (1, 50, 128), 'emg': (1, 50, 128), 'resp': (1, 50, 128), 'bpm': (1, 50, 128), 'eye': (1, 50, 128), 'audio': (1, 50, 128), 'video': (1, 50, 128), 'text': (1, 50, 128)}]
+OUTPUT   : (1, 50, 10, 128)
+PURPOSE  : Runtime module execution
+STATUS   : PASS
+
+--------------------------------------------------------------------------------
+STAGE    : Runtime
+MODULE   : UnifiedConcatFusion
+INPUT    : [(1, 50, 10, 128)]
+OUTPUT   : (1, 50, 256)
+PURPOSE  : Runtime module execution
+STATUS   : PASS
+
+--------------------------------------------------------------------------------
+STAGE    : Runtime
+MODULE   : TransformerEncoderDecoder
+INPUT    : []
+OUTPUT   : [(1, 50, 256), (1, 25, 256)]
+PURPOSE  : Runtime module execution
+STATUS   : PASS
+
+--------------------------------------------------------------------------------
+STAGE    : Runtime
+MODULE   : RecognitionHead
+INPUT    : [(1, 50, 256)]
+OUTPUT   : {'continuous': {'valence': (1,), 'arousal': (1,), 'dominance': (1,), 'stress': (1,), 'workload': (1,), 'fatigue': (1,)}, 'discrete': {}}
+PURPOSE  : Runtime module execution
+STATUS   : PASS
+
+--------------------------------------------------------------------------------
+STAGE    : Runtime
+MODULE   : ForecastingHead
+INPUT    : [(1, 25, 256)]
+OUTPUT   : {'continuous': {'valence': (1, 25), 'arousal': (1, 25), 'dominance': (1, 25), 'stress': (1, 25), 'workload': (1, 25), 'fatigue': (1, 25)}, 'discrete': {}}
+PURPOSE  : Runtime module execution
+STATUS   : PASS
+
+--------------------------------------------------------------------------------
+STAGE    : Final Outputs
+MODULE   : Token Output
+INPUT    : -
+OUTPUT   : (1, 50, 10, 128)
+THEORY   : (B,T,N,128)
+PURPOSE  : Tokenized modality representations
+STATUS   : PASS
+
+--------------------------------------------------------------------------------
+STAGE    : Final Outputs
+MODULE   : Fusion Output
+INPUT    : -
+OUTPUT   : (1, 50, 256)
+THEORY   : (B,T,256)
+PURPOSE  : Concatenation-based fused representation
+STATUS   : PASS
+
+--------------------------------------------------------------------------------
+STAGE    : Final Outputs
+MODULE   : Transformer Encoder
+INPUT    : -
+OUTPUT   : (1, 50, 256)
+THEORY   : (B,T,256)
+PURPOSE  : Temporal encoded sequence
+STATUS   : PASS
+
+--------------------------------------------------------------------------------
+STAGE    : Final Outputs
+MODULE   : Transformer Decoder
+INPUT    : -
+OUTPUT   : (1, 25, 256)
+THEORY   : (B,H,256)
+PURPOSE  : Future latent sequence
+STATUS   : PASS
+
+================================================================================
+PASS   : 20
+FAIL   : 0
+RESULT : PASS
+================================================================================

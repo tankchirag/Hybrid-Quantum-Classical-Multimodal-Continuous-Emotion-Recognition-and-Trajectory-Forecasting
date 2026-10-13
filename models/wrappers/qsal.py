@@ -1,242 +1,535 @@
 # models/wrappers/qsal.py
+
 """
-QSAL Wrapper
+models.wrappers.qsal
+====================
+
+QSAL
+
+Quantum Self-Attention Layer
+
+This wrapper implements the proposed
+hybrid quantum-classical architecture.
+
+Pipeline
+--------
+
+Source Inputs
+    ↓
+
+Feature Extractors
+    ↓
+
+QSAL Fusion
+    ↓
+
+Transformer Encoder-Decoder
+    ↓
+
+Recognition Head
+    ↓
+
+Forecasting Head
+
+Design Goals
 ------------
 
-Proposed Method: QSAL (Quantum Self‑Attention Layer)
+✓ Dataset Agnostic
 
-This wrapper implements the full hybrid quantum–classical multimodal
-architecture described in your thesis:
+✓ Label Agnostic
 
-    Step‑A: MultimodalFeatureExtractors
-    Step‑B: ModalityTokenizer + QSALFusion
-    Step‑C: Transformer Encoder–Decoder
-    Step‑D: Recognition + Forecasting Heads
+✓ Continuous Labels
 
-Key Features:
-    • Supports REAL + SYNTHETIC dataset modes
-    • Supports RECOLA (no text) + SEWA (raw text)
-    • Uses unified modality contract (B, T, 128)
-    • Produces aligned V/A history + future targets
-    • Returns (rec_pred_seq, for_pred) as required by Trainer
+✓ Discrete Labels
+
+✓ Recognition Compatible
+
+✓ Forecasting Compatible
+
+✓ Variable Source Count
+
+✓ Future Proof
+
+Output
+------
+
+{
+    "recognition": ...,
+
+    "forecasting": ...,
+
+    "encoder_outputs": ...,
+
+    "decoder_outputs": ...
+}
 """
+
+from __future__ import annotations
+
+from types import SimpleNamespace
 
 import torch
 import torch.nn as nn
 
-from models.encoders.multimodal_feature_extractors import MultimodalFeatureExtractors
-from models.fusion.qsal_fusion import QSALFusion
-from models.temporal.transformer_ed import TransformerEncoderDecoder
-from models.heads.recognition_head import RecognitionHead
-from models.heads.forecasting_head import ForecastingHead
+from models.encoders.multimodal_feature_extractors_v2 import (
+    MultimodalFeatureExtractorsV2,
+)
 
+from models.fusion.qsal_fusion import (
+    QSALFusion,
+)
 
-class DotDict(dict):
-    """Dictionary with attribute-style access."""
-    __getattr__ = dict.get
-    __setattr__ = dict.__setitem__
-    __delattr__ = dict.__delitem__
+from models.temporal.transformer_ed import (
+    TransformerEncoderDecoder,
+)
+
+from models.heads.recognition_head import (
+    RecognitionHead,
+)
+
+from models.heads.forecasting_head import (
+    ForecastingHead,
+)
 
 
 class QSAL(nn.Module):
     """
-    QSAL Wrapper
+    Quantum Self-Attention Learning.
 
-    Full hybrid quantum–classical architecture:
-        - Multimodal feature extraction
-        - QSAL fusion (Quantum Self‑Attention Layer)
-        - Transformer encoder–decoder
-        - V/A recognition + forecasting heads
+    Main thesis architecture.
 
-    Parameters
-    ----------
-    emb_dim : int
-        Per‑modality embedding dimension (128).
-    proj_dim : int
-        Classical projection dimension before QSAL (unused here).
-    transformer_dim : int
-        Transformer d_model (256).
-    num_heads : int
-        Transformer attention heads.
-    num_layers : int
-        Transformer encoder/decoder layers.
-    target_seq_len : int
-        Temporal length T.
-    forecast_horizon : int
-        Future prediction horizon S.
-    synthetic : bool
-        If True → synthetic mode (QSAL debugging).
-        If False → real mode (RECOLA/SEWA).
-    modalities : dict
-        Modality flags (audio/video/ecg/eda/text).
-    qsal_cfg : dict
-        Quantum configuration (num_qubits, circuit_depth, fusion_dim, num_heads).
-    dataset_name : str
-        "recola", "sewa", or "synthetic".
+    Pipeline
+
+        Modalities
+            ↓
+
+        Feature Extractors
+            ↓
+
+        QSAL Fusion
+            ↓
+
+        Transformer Encoder Decoder
+            ↓
+
+        Recognition Head
+            ↓
+
+        Forecasting Head
     """
 
     def __init__(
         self,
-        emb_dim: int,
-        proj_dim: int,
-        transformer_dim: int,
-        num_heads: int,
-        num_layers: int,
-        target_seq_len: int,
-        forecast_horizon: int,
-        synthetic: bool,
-        modalities: dict,
-        qsal_cfg: dict,
-        dataset_name: str,
+        config,
     ):
         super().__init__()
 
-        self.modalities = modalities
-        self.target_seq_len = target_seq_len
-        self.forecast_horizon = forecast_horizon
+        # ==================================================
+        # Config
+        # ==================================================
 
-        # ------------------------------------------------------------
-        # 1. Multimodal Feature Extractors (REAL + SYNTHETIC)
-        # ------------------------------------------------------------
-        self.extractors = MultimodalFeatureExtractors(
-            emb_dim=emb_dim,
-            synthetic=synthetic,
-            target_seq_len=target_seq_len,
-            include_text=self.modalities["text"],
+        if isinstance(
+            config,
+            dict,
+        ):
+            config = SimpleNamespace(
+                **config
+            )
+
+        self.config = config
+
+        # ==================================================
+        # Modalities
+        # ==================================================
+
+        self.modalities = getattr(
+            config,
+            "modalities",
+            {},
         )
 
-        # ------------------------------------------------------------
-        # 2. QSAL Fusion configuration
-        # ------------------------------------------------------------
-        active_modalities = [m for m, use in self.modalities.items() if use]
+        # ==================================================
+        # Targets
+        # ==================================================
 
-        self.qsal_cfg = DotDict({
-            "modalities": active_modalities,
-            "dataset": dataset_name.lower(),
-            "num_qubits": qsal_cfg.get("num_qubits", 4),
-            "circuit_depth": qsal_cfg.get("circuit_depth", 2),
-            "fusion_dim": qsal_cfg.get("fusion_dim", 256),
-            "num_heads": qsal_cfg.get("num_heads", 4),
-        })
+        if hasattr(
+            config,
+            "continuous_targets",
+        ):
+            self.continuous_targets = (
+                config.continuous_targets
+            )
 
-        # QSALFusion outputs (B, T, transformer_dim)
-        self.fusion = QSALFusion(
-            emb_dim=emb_dim,                          # per‑modality embedding dim
-            model_dim=transformer_dim,                # Transformer d_model
-            fused_dim=self.qsal_cfg["fusion_dim"],    # intermediate fused dimension
-            modalities=active_modalities,
-            init_sigma=1.0,
-            learnable_sigma=True,
-        )
+        elif hasattr(
+            config,
+            "continuous_labels",
+        ):
+            self.continuous_targets = list(
+                config.continuous_labels
+            )
 
-        # Identity projection (QSALFusion already outputs correct dim)
-        self.fused_proj = nn.Identity()
-
-        # ------------------------------------------------------------
-        # 3. Transformer Encoder–Decoder
-        # ------------------------------------------------------------
-        self.temporal_model = TransformerEncoderDecoder(
-            d_model=transformer_dim,
-            nhead=num_heads,
-            num_encoder_layers=num_layers,
-            num_decoder_layers=num_layers,
-            dim_feedforward=transformer_dim * 4,
-            dropout=0.1,
-            forecast_horizon=forecast_horizon,
-        )
-
-        # ------------------------------------------------------------
-        # 4. Recognition head (V/A regression)
-        # ------------------------------------------------------------
-        self.recognition_head = RecognitionHead(
-            input_dim=transformer_dim,
-            output_dim=2,
-        )
-
-        # ------------------------------------------------------------
-        # 5. Forecasting head (future V/A regression)
-        # ------------------------------------------------------------
-        self.forecasting_head = ForecastingHead(
-            input_dim=transformer_dim,
-            output_dim=2,
-        )
-
-    # -------------------------------------------------------------
-    # FORWARD PASS
-    # -------------------------------------------------------------
-    def forward(self, batch: dict):
-        """
-        QSAL forward pass.
-
-        Parameters
-        ----------
-        batch : dict
-            Contains:
-                - raw signals (REAL mode)
-                - synthetic tensors (SYNTHETIC mode)
-                - "va": (B, T_va, 2)
-
-        Returns
-        -------
-        tuple
-            rec_pred_seq : (B, T_align, 2)
-            for_pred     : (B, S, 2)
-
-        Side effects
-        ------------
-        batch["va_hist"]   : (B, T_align, 2)
-        batch["va_future"] : (B, S, 2)
-        """
-
-        # ------------------------------------------------------------
-        # 0. Ground truth V/A
-        # ------------------------------------------------------------
-        va_full = batch["va"]          # (B, T_va, 2)
-        B, T_va, _ = va_full.shape
-        S = self.forecast_horizon
-
-        # Future ground truth
-        if S <= T_va:
-            va_future_gt = va_full[:, -S:, :]
         else:
-            va_future_gt = va_full[:, -1:, :].repeat(1, S, 1)
+            self.continuous_targets = []
 
-        # ------------------------------------------------------------
-        # 1. Multimodal embeddings (REAL + SYNTHETIC)
-        # ------------------------------------------------------------
-        emb_dict = self.extractors(batch)   # each: (B, T, emb_dim)
+        if hasattr(
+            config,
+            "discrete_targets",
+        ):
+            self.discrete_targets = (
+                config.discrete_targets
+            )
 
-        # ------------------------------------------------------------
-        # 2. QSAL fusion → (B, T, transformer_dim)
-        # ------------------------------------------------------------
-        fused_raw = self.fusion(emb_dict)
-        fused = self.fused_proj(fused_raw)
+        elif hasattr(
+            config,
+            "discrete_labels",
+        ):
+            self.discrete_targets = {}
 
-        # ------------------------------------------------------------
-        # 3. Temporal alignment (match fused length with VA length)
-        # ------------------------------------------------------------
-        T_fused = fused.size(1)
-        T_align = min(T_fused, T_va)
+        else:
+            self.discrete_targets = {}
 
-        fused_aligned = fused[:, -T_align:, :]
-        va_hist = va_full[:, -T_align:, :]
+        # ==================================================
+        # Model Parameters
+        # ==================================================
 
-        # Store aligned targets into batch for Trainer
-        batch["va_hist"] = va_hist          # (B, T_align, 2)
-        batch["va_future"] = va_future_gt   # (B, S, 2)
+        model_cfg = getattr(
+            config,
+            "model",
+            config,
+        )
 
-        # ------------------------------------------------------------
-        # 4. Transformer Encoder–Decoder
-        # ------------------------------------------------------------
-        enc_out, dec_out = self.temporal_model(fused_aligned, va_hist)
+        self.embedding_dim = getattr(
+            model_cfg,
+            "emb_dim",
+            128,
+        )
 
-        # ------------------------------------------------------------
-        # 5. Heads
-        # ------------------------------------------------------------
-        rec_pred_seq = self.recognition_head(enc_out)   # (B, T_align, 2)
-        for_pred = self.forecasting_head(dec_out)       # (B, S, 2)
+        self.transformer_dim = getattr(
+            model_cfg,
+            "transformer_dim",
+            256,
+        )
 
-        # ------------------------------------------------------------
-        # 6. QSAL output format for Trainer
-        # ------------------------------------------------------------
-        return rec_pred_seq, for_pred
+        self.num_heads = getattr(
+            model_cfg,
+            "num_heads",
+            4,
+        )
+
+        self.num_layers = getattr(
+            model_cfg,
+            "num_layers",
+            4,
+        )
+
+        self.dropout = getattr(
+            model_cfg,
+            "dropout",
+            0.1,
+        )
+
+        # ==================================================
+        # QSAL Configuration
+        # ==================================================
+
+        if isinstance(config, dict):
+
+            qsal_cfg = config.get(
+                "qsal",
+                {},
+            )
+
+        else:
+
+            qsal_cfg = getattr(
+                config,
+                "qsal",
+                {},
+            )
+
+        if not isinstance(
+            qsal_cfg,
+            dict,
+        ):
+
+            qsal_cfg = vars(
+                qsal_cfg
+            )
+
+        self.num_qubits = qsal_cfg.get(
+            "num_qubits",
+            4,
+        )
+
+        self.circuit_depth = qsal_cfg.get(
+            "circuit_depth",
+            2,
+        )
+
+        self.fusion_dim = qsal_cfg.get(
+            "fusion_dim",
+            64,
+        )
+
+        self.backend = qsal_cfg.get(
+            "backend",
+            "lightning.qubit",
+        )
+
+        self.encoding = qsal_cfg.get(
+            "encoding",
+            "angle",
+        )
+
+        self.entanglement = qsal_cfg.get(
+            "entanglement",
+            "strong",
+        )
+
+        self.shots = qsal_cfg.get(
+            "shots",
+            None,
+        )
+
+        self.forecast_horizon = getattr(
+            config.forecasting,
+            "horizon",
+            25,
+        )
+
+        self.history_dim = getattr(
+            config,
+            "history_dim",
+            0,
+        )
+
+        # ==================================================
+        # Feature Extractors
+        # ==================================================
+
+        self.extractors = (
+            MultimodalFeatureExtractorsV2(
+                embedding_dim=
+                self.embedding_dim,
+
+                modalities=
+                self.modalities,
+            )
+        )
+
+        # ==================================================
+        # QSAL Fusion
+        # ==================================================
+
+        self.fusion = (
+            QSALFusion(
+                emb_dim=self.embedding_dim,
+
+                model_dim=self.transformer_dim,
+
+                fused_dim=self.fusion_dim,
+
+                num_qubits=self.num_qubits,
+
+                circuit_depth=self.circuit_depth,
+
+                backend=self.backend,
+
+                sources=None,
+            )
+        )
+
+        # ==================================================
+        # Transformer
+        # ==================================================
+
+        self.temporal_model = (
+            TransformerEncoderDecoder(
+
+                d_model=
+                self.transformer_dim,
+
+                nhead=
+                self.num_heads,
+
+                num_encoder_layers=
+                self.num_layers,
+
+                num_decoder_layers=
+                self.num_layers,
+
+                dim_feedforward=
+                4 * self.transformer_dim,
+
+                dropout=
+                self.dropout,
+
+                forecast_horizon=
+                self.forecast_horizon,
+
+                history_dim=
+                self.history_dim,
+            )
+        )
+
+        # ==================================================
+        # Recognition Head
+        # ==================================================
+
+        self.recognition_head = (
+            RecognitionHead(
+
+                continuous_targets=
+                self.continuous_targets,
+
+                discrete_targets=
+                self.discrete_targets,
+
+                input_dim=
+                self.transformer_dim,
+            )
+        )
+
+        # ==================================================
+        # Forecast Head
+        # ==================================================
+
+        self.forecasting_head = (
+            ForecastingHead(
+
+                continuous_targets=
+                self.continuous_targets,
+
+                discrete_targets=
+                self.discrete_targets,
+
+                input_dim=
+                self.transformer_dim,
+            )
+        )
+
+    # ======================================================
+    # Forward
+    # ======================================================
+
+    def forward(
+        self,
+        batch,
+    ):
+
+        modalities = batch[
+            "modalities"
+        ]
+
+        embeddings = (
+            self.extractors(
+                modalities
+            )
+        )
+
+        fused = (
+            self.fusion(
+                embeddings
+            )
+        )
+
+        label_history = batch.get(
+            "label_history",
+            None,
+        )
+
+        (
+            encoder_outputs,
+            decoder_outputs,
+        ) = self.temporal_model(
+
+            fused=fused,
+
+            label_history=
+            label_history,
+        )
+
+        recognition_outputs = (
+            self.recognition_head(
+                encoder_outputs
+            )
+        )
+
+        forecasting_outputs = (
+            self.forecasting_head(
+                decoder_outputs
+            )
+        )
+
+        return {
+
+            "recognition":
+                recognition_outputs,
+
+            "forecasting":
+                forecasting_outputs,
+
+            "encoder_outputs":
+                encoder_outputs,
+
+            "decoder_outputs":
+                decoder_outputs,
+
+            "fused":
+                fused,
+        }
+
+    # ======================================================
+    # Metadata
+    # ======================================================
+
+    def summary(
+        self,
+    ):
+
+        return {
+
+            "model":
+                "QSAL",
+
+            "fusion":
+                "QSALFusion",
+
+            "num_qubits":
+                self.num_qubits,
+
+            "circuit_depth":
+                self.circuit_depth,
+
+            "transformer_dim":
+                self.transformer_dim,
+
+            "forecast_horizon":
+                self.forecast_horizon,
+
+            "continuous_targets":
+                self.continuous_targets,
+
+            "discrete_targets":
+                self.discrete_targets,
+
+            "history_dim":
+                self.history_dim,
+        }
+
+    def extra_repr(
+        self,
+    ) -> str:
+
+        return (
+
+            f"qubits={self.num_qubits}, "
+
+            f"depth={self.circuit_depth}, "
+
+            f"continuous_targets="
+            f"{len(self.continuous_targets)}, "
+
+            f"discrete_targets="
+            f"{len(self.discrete_targets)}"
+        )

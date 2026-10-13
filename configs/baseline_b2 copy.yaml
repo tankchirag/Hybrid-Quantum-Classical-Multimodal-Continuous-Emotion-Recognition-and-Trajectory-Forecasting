@@ -1,0 +1,53 @@
+# ============================================================
+# Baseline B2 — Unified Concatenation Fusion
+# Fully aligned with updated BaselineB2 wrapper + dataset pipeline
+# ============================================================
+
+dataset:
+  # Dataset name: "recola" or "sewa"
+  name: "sewa"
+
+  # Temporal sequence length T (SEWA≈50, RECOLA≈300)
+  target_seq_len: 100
+
+  # Forecasting horizon S (future steps)
+  forecast_horizon: 20
+
+  # Synthetic mode disabled for Baseline B2
+  synthetic: false
+
+model:
+  name: "baseline_b2"
+
+  # Per‑modality embedding dimension (from feature extractors)
+  emb_dim: 128
+
+  # Classical projection inside B2 fusion (128 → proj_dim)
+  proj_dim: 64
+
+  # Transformer d_model
+  transformer_dim: 256
+
+  # Transformer hyperparameters
+  num_heads: 2
+  num_layers: 2
+
+  # Active modalities (REAL mode)
+  modalities:
+    audio: true
+    video: true
+    ecg: true
+    eda: true
+    text: true        # SEWA includes text modality
+
+training:
+  batch_size: 16
+  epochs: 3
+  lr: 0.0001
+  weight_decay: 0.0
+  patience: 3
+  device: "auto"      # CUDA if available, else CPU
+
+logging:
+  checkpoint_dir: "runs/baseline_b2/"
+  log_interval: 20

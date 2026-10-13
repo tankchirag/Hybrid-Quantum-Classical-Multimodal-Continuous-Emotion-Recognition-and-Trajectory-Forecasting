@@ -1,227 +1,560 @@
-# models/fusion/qsal_fusion.py
 """
-QSALFusion — Quantum Self‑Attention Fusion Layer
-------------------------------------------------
+models.fusion.qsal_fusion
+=========================
 
-This module implements the complete QSAL fusion pipeline, fully aligned
-with the unified modality contract:
+Quantum Self-Attention Fusion (QSAL)
 
-    • REAL mode (RECOLA / SEWA)
-        - audio/video/ecg/eda/text → encoders → (B, T, 128)
-    • SYNTHETIC mode (debugging)
-        - numeric tensors → synthetic encoders → (B, T, 128)
+Purpose
+-------
 
-Fusion Steps:
-    1. Stack modality embeddings → (B, T, M, 128)
-    2. Project each modality token → PQC input (4‑dim)
-    3. Apply Q/K/V quantum circuits (QSALPQC)
-    4. Gaussian attention over modalities
-    5. Pool over modalities → (B*T, 4)
-    6. Project → fused_dim → model_dim
-    7. Reshape → (B, T, model_dim)
+Implements the proposed hybrid quantum-classical
+fusion mechanism.
 
-This version is fully compatible with:
-    • Updated MultimodalFeatureExtractors
-    • Updated TextEncoder
-    • Updated ModalityTokenizer
-    • Updated QSAL wrapper
-    • REAL + SYNTHETIC dataset modes
+QSAL replaces classical Query / Key / Value
+projections with parameterized quantum circuits
+while preserving a classical attention mechanism.
+
+Pipeline
+--------
+
+Source Embeddings
+
+    (B,T,128)
+
+        ↓
+
+Source Tokens
+
+    (B,T,N,128)
+
+        ↓
+
+128 → 4
+
+        ↓
+
+Quantum Query Circuit
+
+Quantum Key Circuit
+
+Quantum Value Circuit
+
+        ↓
+
+Gaussian Attention
+
+        ↓
+
+Source Pooling
+
+        ↓
+
+4 → fused_dim
+
+        ↓
+
+fused_dim → 256
+
+        ↓
+
+(B,T,256)
+
+Design Goals
+------------
+
+✓ Dataset Agnostic
+
+✓ Label Agnostic
+
+✓ Continuous Labels
+
+✓ Discrete Labels
+
+✓ Recognition Compatible
+
+✓ Forecasting Compatible
+
+✓ Variable Source Count
+
+✓ Missing Source Compatible
+
+✓ Future Proof
+
+Input
+-----
+
+embeddings
+
+{
+    source_name:
+        (B,T,128)
+}
+
+Output
+------
+
+fused
+
+    (B,T,256)
+
+Transformer-ready representation.
+
+Notes
+-----
+
+The fusion layer operates on source tokens.
+
+Sources may originate from:
+
+Physiological Sources
+
+    ECG
+    EDA
+    EEG
+    EMG
+    RESP
+    BPM
+
+Behavioral Sources
+
+    Eye
+    Audio
+    Video
+    Text
+
+Future Sources
+
+    Continuous Label History
+
+    Discrete Label History
+
+The fusion algorithm remains unchanged
+regardless of source type.
 """
+
 
 from __future__ import annotations
-from typing import List, Optional, Dict
+
+from typing import Dict
+from typing import List
+from typing import Optional
 
 import torch
 import torch.nn as nn
 
-from quantum.qsal_pqc import QSALPQC
-from models.attention.gaussian_attention import GaussianAttention
+from quantum.unified_pqc import UnifiedPQC
+
+from models.attention.gaussian_attention import (
+    GaussianAttention,
+)
 
 
-class QSALFusion(nn.Module):
+class QSALFusion(
+    nn.Module,
+):
     """
-    Quantum Self‑Attention Fusion Layer.
-
-    Parameters
-    ----------
-    emb_dim : int
-        Per‑modality embedding dimension (128).
-    model_dim : int
-        Transformer d_model (256).
-    fused_dim : int
-        Intermediate fused dimension before projection to model_dim.
-    modalities : List[str]
-        Active modalities (e.g., ["audio","video","ecg","eda"] or ["audio","video","text"]).
-    init_sigma : float
-        Initial Gaussian attention sigma.
-    learnable_sigma : bool
-        Whether sigma is trainable.
+    Quantum Self-Attention Fusion Layer.
     """
+
+    DEFAULT_SOURCE_ORDER = [
+
+        "ecg",
+        "eda",
+        "eeg",
+        "emg",
+        "resp",
+        "bpm",
+
+        "eye",
+
+        "audio",
+        "video",
+        "text",
+
+        "continuous_labels",
+        "discrete_labels",
+    ]
 
     def __init__(
         self,
-        emb_dim: int,
-        model_dim: int = 256,
-        fused_dim: int = 64,
-        modalities: Optional[List[str]] = None,
-        init_sigma: float = 1.0,
-        learnable_sigma: bool = True,
+        emb_dim=128,
+        model_dim=256,
+        fused_dim=64,
+        num_qubits=4,
+        circuit_depth=2,
+        backend="lightning.qubit",
+        sources=None,
+        init_sigma=1.0,
+        learnable_sigma=True,
     ) -> None:
+
         super().__init__()
 
-        self.input_dim = emb_dim
+        self.emb_dim = emb_dim
         self.model_dim = model_dim
         self.fused_dim = fused_dim
-        self.modalities = modalities or ["audio", "video", "ecg", "eda"]
 
-        # PQC input/output dimensions (fixed at 4 for QSAL)
-        self.pqc_input_dim = 4
-        self.pqc_output_dim = 4
+        self.num_qubits = num_qubits
+        self.circuit_depth = circuit_depth
+        self.backend = backend
 
-        # ------------------------------------------------------------
-        # 1. Linear projections: 128 → 4
-        # ------------------------------------------------------------
-        self.to_pqc_input = nn.Linear(self.input_dim, self.pqc_input_dim)
-
-        # ------------------------------------------------------------
-        # 2. PQC output → fused_dim → model_dim
-        # ------------------------------------------------------------
-        self.pqc_out_to_fused = nn.Linear(self.pqc_output_dim, self.fused_dim)
-        self.fused_to_model = nn.Linear(self.fused_dim, self.model_dim)
-
-        # ------------------------------------------------------------
-        # 3. Quantum circuits (Q, K, V)
-        # ------------------------------------------------------------
-        self.q_pqc = QSALPQC(n_qubits=4, depth=2)
-        self.k_pqc = QSALPQC(n_qubits=4, depth=2)
-        self.v_pqc = QSALPQC(n_qubits=4, depth=2)
-
-        # ------------------------------------------------------------
-        # 4. Gaussian attention over modalities
-        # ------------------------------------------------------------
-        self.attention = GaussianAttention(
-            init_sigma=init_sigma,
-            learnable_sigma=learnable_sigma,
+        self.sources = (
+            sources
+            or self.DEFAULT_SOURCE_ORDER
         )
 
-    # -------------------------------------------------------------
-    # Stack modality embeddings → (B, T, M, 128)
-    # -------------------------------------------------------------
-    def _stack_modalities(self, emb_dict: Dict[str, torch.Tensor]) -> torch.Tensor:
-        """
-        Stack active modality embeddings into (B, T, M, D_in).
+        # --------------------------------------
+        # Fixed QSAL Quantum Dimensions
+        # --------------------------------------
 
-        Missing modalities (e.g., RECOLA text) are skipped cleanly.
-        """
+        self.pqc_input_dim = num_qubits
+        self.pqc_output_dim = num_qubits
 
-        tensors = []
-        for m in self.modalities:
-            emb = emb_dict.get(m, None)
-            if emb is not None:
-                tensors.append(emb)
 
-        if len(tensors) == 0:
-            raise ValueError("QSALFusion received no active modality embeddings.")
+        # --------------------------------------
+        # Classical → Quantum
+        # --------------------------------------
 
-        return torch.stack(tensors, dim=2)  # (B, T, M, D_in)
+        self.to_pqc_input = nn.Linear(
+            emb_dim,
+            self.pqc_input_dim,
+        )
 
-    # -------------------------------------------------------------
-    # Forward pass
-    # -------------------------------------------------------------
-    def forward(
+        # --------------------------------------
+        # Q / K / V Quantum Circuits
+        # --------------------------------------
+
+        self.q_pqc = UnifiedPQC(
+            num_qubits=num_qubits,
+            depth=circuit_depth,
+            device_name=backend,
+        )
+
+        self.k_pqc = UnifiedPQC(
+            num_qubits=num_qubits,
+            depth=circuit_depth,
+            device_name=backend,
+        )
+
+        self.v_pqc = UnifiedPQC(
+            num_qubits=num_qubits,
+            depth=circuit_depth,
+            device_name=backend,
+        )
+
+        # --------------------------------------
+        # Gaussian Attention
+        # --------------------------------------
+
+        self.attention = (
+            GaussianAttention(
+                init_sigma=init_sigma,
+                learnable_sigma=learnable_sigma,
+            )
+        )
+
+        # --------------------------------------
+        # Quantum → Transformer Space
+        # --------------------------------------
+
+        self.pqc_to_fused = nn.Linear(
+            self.pqc_output_dim,
+            fused_dim,
+        )
+
+        self.fused_to_model = nn.Linear(
+            fused_dim,
+            model_dim,
+        )
+
+    # --------------------------------------------------
+    # Source Processing
+    # --------------------------------------------------
+
+    def _stack_sources(
         self,
-        emb_dict: Dict[str, torch.Tensor],
-        mask: Optional[torch.Tensor] = None,
+        embeddings: Dict[
+            str,
+            torch.Tensor,
+        ],
     ) -> torch.Tensor:
         """
-        QSAL fusion forward pass.
-
-        Parameters
-        ----------
-        emb_dict : dict
-            Modality embeddings (B, T, 128)
-        mask : Optional[Tensor]
-            Optional modality mask.
-
         Returns
-        -------
-        fused_model : (B, T, model_dim)
+
+            (B,T,N,128)
         """
 
-        # ---------------------------------------------------------
-        # 1. Stack modalities → (B, T, M, 128)
-        # ---------------------------------------------------------
-        x = self._stack_modalities(emb_dict)
+        source_tokens = []
 
-        if x.dim() != 4:
-            raise ValueError(
-                "QSALFusion expects stacked input of shape (B, T, M, D_in). "
-                f"Got shape {x.shape}."
+        for source in self.sources:
+
+            emb = embeddings.get(
+                source,
+                None,
             )
 
-        B, T, M, D_in = x.shape
-        if D_in != self.input_dim:
-            raise ValueError(
-                f"QSALFusion input_dim={self.input_dim}, but got D_in={D_in}."
-            )
+            if emb is not None:
 
-        # ---------------------------------------------------------
-        # 2. Project modality tokens → PQC input (B, T, M, 4)
-        # ---------------------------------------------------------
-        x_proj = self.to_pqc_input(x)  # (B, T, M, 4)
-        x_flat = x_proj.reshape(B * T * M, self.pqc_input_dim)
-
-        # ---------------------------------------------------------
-        # 3. Apply Q/K/V PQCs (float64 outputs)
-        # ---------------------------------------------------------
-        q_flat = self.q_pqc(x_flat)  # (B*T*M, 4)
-        k_flat = self.k_pqc(x_flat)  # (B*T*M, 4)
-        v_flat = self.v_pqc(x_flat)  # (B*T*M, 4)
-
-        # ---------------------------------------------------------
-        # 4. Reshape PQC outputs → (B*T, M, 4)
-        # ---------------------------------------------------------
-        q = q_flat.view(B * T, M, self.pqc_output_dim)
-        k = k_flat.view(B * T, M, self.pqc_output_dim)
-        v = v_flat.view(B * T, M, self.pqc_output_dim)
-
-        # ---------------------------------------------------------
-        # 5. Gaussian attention over modalities
-        # ---------------------------------------------------------
-        attn_mask = None
-        if mask is not None:
-            if mask.dim() == 2:
-                mask_bt = mask.unsqueeze(1).expand(B, T, M).reshape(B * T, M)
-                attn_mask = mask_bt
-            elif mask.dim() == 3:
-                attn_mask = mask.reshape(B * T, M)
-            else:
-                raise ValueError(
-                    f"Unsupported mask shape {mask.shape}. "
-                    "Expected (B, M) or (B, T, M)."
+                source_tokens.append(
+                    emb
                 )
 
-        out_attn = self.attention(q=q, k=k, v=v, mask=attn_mask)  # (B*T, M, 4)
+        if len(source_tokens) == 0:
 
-        # ---------------------------------------------------------
-        # 6. Pool over modalities → (B*T, 4)
-        # ---------------------------------------------------------
-        fused_pqc = out_attn.mean(dim=1)
+            raise RuntimeError(
+                "QSALFusion received "
+                "no active source embeddings."
+            )
 
-        # ---------------------------------------------------------
-        # 7. CRITICAL: PQC outputs are float64 → cast to float32
-        # ---------------------------------------------------------
-        fused_pqc = fused_pqc.to(torch.float32)
+        return torch.stack(
+            source_tokens,
+            dim=2,
+        )
 
-        # ---------------------------------------------------------
-        # 8. Project fused PQC output → fused_dim → model_dim
-        # ---------------------------------------------------------
-        fused = self.pqc_out_to_fused(fused_pqc)      # (B*T, fused_dim)
-        fused_model = self.fused_to_model(fused)      # (B*T, model_dim)
+    # --------------------------------------------------
+    # Forward
+    # --------------------------------------------------
 
-        # ---------------------------------------------------------
-        # 9. Reshape back to (B, T, model_dim)
-        # ---------------------------------------------------------
-        fused_model = fused_model.view(B, T, self.model_dim)
+    def forward(
+        self,
+        embeddings: Dict[
+            str,
+            torch.Tensor,
+        ],
+        mask: Optional[
+            torch.Tensor
+        ] = None,
+    ) -> torch.Tensor:
+        """
+        Returns
+
+            (B,T,256)
+        """
+
+        # ----------------------------------
+        # Source Tokens
+        #
+        # (B,T,N,128)
+        # ----------------------------------
+
+        x = self._stack_sources(
+            embeddings
+        )
+
+        if x.dim() != 4:
+
+            raise ValueError(
+                "QSALFusion expects "
+                "(B,T,N,D) input. "
+                f"Got {x.shape}"
+            )
+
+        B, T, N, D = x.shape
+
+        if D != self.emb_dim:
+
+            raise ValueError(
+                f"Expected embedding "
+                f"dim {self.emb_dim}, "
+                f"got {D}"
+            )
+
+        # ----------------------------------
+        # 128 → 4
+        #
+        # (B,T,N,4)
+        # ----------------------------------
+
+        x_proj = self.to_pqc_input(
+            x
+        )
+
+        x_flat = x_proj.reshape(
+            B * T * N,
+            self.pqc_input_dim,
+        )
+
+        # ----------------------------------
+        # Q / K / V PQCs
+        #
+        # (B*T*N,4)
+        # ----------------------------------
+
+        x_pqc = x_flat.unsqueeze(1)
+
+        q_flat = (
+            self.q_pqc(
+                x_pqc
+            )
+            .squeeze(1)
+        )
+
+        k_flat = (
+            self.k_pqc(
+                x_pqc
+            )
+            .squeeze(1)
+        )
+
+        v_flat = (
+            self.v_pqc(
+                x_pqc
+            )
+            .squeeze(1)
+        )
+        # ----------------------------------
+        # (B*T,N,4)
+        # ----------------------------------
+
+        q = q_flat.view(
+            B * T,
+            N,
+            self.pqc_output_dim,
+        )
+
+        k = k_flat.view(
+            B * T,
+            N,
+            self.pqc_output_dim,
+        )
+
+        v = v_flat.view(
+            B * T,
+            N,
+            self.pqc_output_dim,
+        )
+
+        # ----------------------------------
+        # Optional Mask
+        # ----------------------------------
+
+        attn_mask = None
+
+        if mask is not None:
+
+            if mask.dim() == 2:
+
+                attn_mask = (
+                    mask.unsqueeze(1)
+                    .expand(
+                        B,
+                        T,
+                        N,
+                    )
+                    .reshape(
+                        B * T,
+                        N,
+                    )
+                )
+
+            elif mask.dim() == 3:
+
+                attn_mask = (
+                    mask.reshape(
+                        B * T,
+                        N,
+                    )
+                )
+
+            else:
+
+                raise ValueError(
+                    f"Unsupported mask "
+                    f"shape {mask.shape}"
+                )
+
+        # ----------------------------------
+        # Gaussian Attention
+        #
+        # (B*T,N,4)
+        # ----------------------------------
+
+        out_attn = self.attention(
+            q=q,
+            k=k,
+            v=v,
+            mask=attn_mask,
+        )
+
+        # ----------------------------------
+        # Pool Sources
+        #
+        # (B*T,4)
+        # ----------------------------------
+
+        fused_pqc = (
+            out_attn.mean(
+                dim=1
+            )
+        )
+
+        # ----------------------------------
+        # PennyLane safety
+        # ----------------------------------
+
+        fused_pqc = fused_pqc.to(
+            torch.float32
+        )
+
+        # ----------------------------------
+        # 4 → fused_dim
+        # ----------------------------------
+
+        fused = self.pqc_to_fused(
+            fused_pqc
+        )
+
+        # ----------------------------------
+        # fused_dim → model_dim
+        # ----------------------------------
+
+        fused_model = (
+            self.fused_to_model(
+                fused
+            )
+        )
+
+        # ----------------------------------
+        # Restore Time Shape
+        #
+        # (B,T,256)
+        # ----------------------------------
+
+        fused_model = (
+            fused_model.view(
+                B,
+                T,
+                self.model_dim,
+            )
+        )
 
         return fused_model
+
+    # --------------------------------------------------
+    # Metadata
+    # --------------------------------------------------
+
+    def summary(
+        self,
+    ) -> dict:
+
+        return {
+
+            "fusion_type":
+                "qsal",
+
+            "sources":
+                self.sources,
+
+            "embedding_dim":
+                self.emb_dim,
+
+            "quantum_dim":
+                self.pqc_input_dim,
+
+            "fused_dim":
+                self.fused_dim,
+
+            "transformer_dim":
+                self.model_dim,
+        }

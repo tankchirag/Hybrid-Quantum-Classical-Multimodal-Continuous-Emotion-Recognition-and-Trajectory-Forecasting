@@ -1,0 +1,54 @@
+{
+    "models": [
+        {
+            "Model": "B1",
+            "Parameters": 8502988,
+            "Trainable": 8502988,
+            "FLOPs": "N/A"
+        },
+        {
+            "Model": "B2",
+            "Parameters": 8469580,
+            "Trainable": 8469580,
+            "FLOPs": "N/A"
+        },
+        {
+            "Model": "B3",
+            "Parameters": 8251656,
+            "Trainable": 8251656,
+            "FLOPs": "N/A"
+        },
+        {
+            "Model": "QSAL",
+            "Parameters": 8296025,
+            "Trainable": 8296025,
+            "FLOPs": "N/A"
+        }
+    ],
+    "breakdown": [
+        {
+            "Model": "B1",
+            "FusionParams": 41664,
+            "TransformerParams": 7379200,
+            "HeadParams": 396300
+        },
+        {
+            "Model": "B2",
+            "FusionParams": 8256,
+            "TransformerParams": 7379200,
+            "HeadParams": 396300
+        },
+        {
+            "Model": "B3",
+            "FusionParams": 23292,
+            "TransformerParams": 7379200,
+            "HeadParams": 396300
+        },
+        {
+            "Model": "QSAL",
+            "FusionParams": 67661,
+            "TransformerParams": 7379200,
+            "HeadParams": 396300
+        }
+    ]
+}

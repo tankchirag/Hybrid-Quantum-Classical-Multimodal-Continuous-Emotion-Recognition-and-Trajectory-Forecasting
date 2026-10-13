@@ -1,0 +1,142 @@
+{
+    "audio": {
+        "stage": "Raw Modalities",
+        "purpose": "Synchronized input modality",
+        "theory": "",
+        "runtime": "(1, 50, 2)",
+        "status": "PASS"
+    },
+    "bpm": {
+        "stage": "Raw Modalities",
+        "purpose": "Synchronized input modality",
+        "theory": "",
+        "runtime": "(1, 50, 1)",
+        "status": "PASS"
+    },
+    "ecg": {
+        "stage": "Raw Modalities",
+        "purpose": "Synchronized input modality",
+        "theory": "",
+        "runtime": "(1, 50, 1)",
+        "status": "PASS"
+    },
+    "eda": {
+        "stage": "Raw Modalities",
+        "purpose": "Synchronized input modality",
+        "theory": "",
+        "runtime": "(1, 50, 1)",
+        "status": "PASS"
+    },
+    "eeg": {
+        "stage": "Raw Modalities",
+        "purpose": "Synchronized input modality",
+        "theory": "",
+        "runtime": "(1, 50, 1)",
+        "status": "PASS"
+    },
+    "emg": {
+        "stage": "Raw Modalities",
+        "purpose": "Synchronized input modality",
+        "theory": "",
+        "runtime": "(1, 50, 1)",
+        "status": "PASS"
+    },
+    "eye": {
+        "stage": "Raw Modalities",
+        "purpose": "Synchronized input modality",
+        "theory": "",
+        "runtime": "(1, 50, 2)",
+        "status": "PASS"
+    },
+    "resp": {
+        "stage": "Raw Modalities",
+        "purpose": "Synchronized input modality",
+        "theory": "",
+        "runtime": "(1, 50, 1)",
+        "status": "PASS"
+    },
+    "text": {
+        "stage": "Raw Modalities",
+        "purpose": "Synchronized input modality",
+        "theory": "",
+        "runtime": "(1, 50, 2)",
+        "status": "PASS"
+    },
+    "video": {
+        "stage": "Raw Modalities",
+        "purpose": "Synchronized input modality",
+        "theory": "",
+        "runtime": "(1, 50, 2)",
+        "status": "PASS"
+    },
+    "MultimodalFeatureExtractorsV2": {
+        "stage": "Runtime",
+        "purpose": "Runtime module execution",
+        "theory": "(B,T,128)",
+        "runtime": "{'ecg': (1, 50, 128), 'eda': (1, 50, 128), 'eeg': (1, 50, 128), 'emg': (1, 50, 128), 'resp': (1, 50, 128), 'bpm': (1, 50, 128), 'eye': (1, 50, 128), 'audio': (1, 50, 128), 'video': (1, 50, 128), 'text': (1, 50, 128)}",
+        "status": "PASS"
+    },
+    "Tokenizer": {
+        "stage": "Runtime",
+        "purpose": "Runtime module execution",
+        "theory": "(B,T,N,128)",
+        "runtime": "(1, 50, 10, 128)",
+        "status": "PASS"
+    },
+    "UnifiedConcatFusion": {
+        "stage": "Runtime",
+        "purpose": "Runtime module execution",
+        "theory": "(B,T,256)",
+        "runtime": "(1, 50, 256)",
+        "status": "PASS"
+    },
+    "TransformerEncoderDecoder": {
+        "stage": "Runtime",
+        "purpose": "Runtime module execution",
+        "theory": "(B,T,256)->(B,H,256)",
+        "runtime": "[(1, 50, 256), (1, 25, 256)]",
+        "status": "PASS"
+    },
+    "RecognitionHead": {
+        "stage": "Runtime",
+        "purpose": "Runtime module execution",
+        "theory": "Recognition Outputs",
+        "runtime": "{'continuous': {'valence': (1,), 'arousal': (1,), 'dominance': (1,), 'stress': (1,), 'workload': (1,), 'fatigue': (1,)}, 'discrete': {}}",
+        "status": "PASS"
+    },
+    "ForecastingHead": {
+        "stage": "Runtime",
+        "purpose": "Runtime module execution",
+        "theory": "Forecast Outputs",
+        "runtime": "{'continuous': {'valence': (1, 25), 'arousal': (1, 25), 'dominance': (1, 25), 'stress': (1, 25), 'workload': (1, 25), 'fatigue': (1, 25)}, 'discrete': {}}",
+        "status": "PASS"
+    },
+    "Token Output": {
+        "stage": "Final Outputs",
+        "purpose": "Tokenized modality representations",
+        "theory": "(B,T,N,128)",
+        "runtime": "(1, 50, 10, 128)",
+        "status": "PASS"
+    },
+    "Fusion Output": {
+        "stage": "Final Outputs",
+        "purpose": "Concatenation-based fused representation",
+        "theory": "(B,T,256)",
+        "runtime": "(1, 50, 256)",
+        "status": "PASS"
+    },
+    "Transformer Encoder": {
+        "stage": "Final Outputs",
+        "purpose": "Temporal encoded sequence",
+        "theory": "(B,T,256)",
+        "runtime": "(1, 50, 256)",
+        "status": "PASS"
+    },
+    "Transformer Decoder": {
+        "stage": "Final Outputs",
+        "purpose": "Future latent sequence",
+        "theory": "(B,H,256)",
+        "runtime": "(1, 25, 256)",
+        "status": "PASS"
+    }
+}

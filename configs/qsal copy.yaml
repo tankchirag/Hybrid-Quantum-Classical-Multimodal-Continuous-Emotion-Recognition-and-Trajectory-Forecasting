@@ -1,0 +1,70 @@
+# ============================================================
+#  Proposed Method: QSAL (Quantum Self‑Attention Layer)
+#  Unified Configuration (REAL + SYNTHETIC)
+#  Fully aligned with updated QSAL pipeline
+# ============================================================
+
+model:
+  name: "QSAL"
+
+  # Per‑modality embedding dimension (from feature extractors)
+  emb_dim: 128
+
+  # Classical projection before QSAL (unused but kept for compatibility)
+  proj_dim: 64
+
+  # Transformer d_model
+  transformer_dim: 256
+
+  # Transformer hyperparameters
+  num_heads: 4
+  num_layers: 4
+
+  # Temporal sequence length T (RECOLA=300, SEWA≈50)
+  target_seq_len: 50
+
+  # Active modalities (REAL + SYNTHETIC)
+  modalities:
+    audio: true
+    video: false
+    ecg: true
+    eda: true
+    text: false        # RECOLA has no text modality
+
+  # QSAL quantum configuration
+  qsal:
+    num_qubits: 4          # QSAL PQC qubits
+    circuit_depth: 2       # PQC depth
+    fusion_dim: 256        # QSALFusion intermediate dimension
+    num_heads: 4           # Gaussian attention heads
+
+# ============================================================
+#  Dataset Configuration
+# ============================================================
+
+dataset:
+  name: "synthetic"        # "recola", "sewa", or "synthetic"
+  synthetic: true          # QSAL uses synthetic mode
+  target_seq_len: 50       # must match model.target_seq_len
+  num_samples: 200         # synthetic dataset size
+  forecast_horizon: 25     # S future steps (1 sec @ 25 Hz)
+
+# ============================================================
+#  Training Configuration
+# ============================================================
+
+training:
+  batch_size: 4
+  epochs: 1
+  lr: 0.0003
+  weight_decay: 0.0
+  patience: 5
+  device: "cpu"
+
+# ============================================================
+#  Logging Configuration
+# ============================================================
+
+logging:
+  run_dir: "runs/qsal/"
+  log_interval: 20

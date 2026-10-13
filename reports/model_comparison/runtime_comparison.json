@@ -1,0 +1,34 @@
+[
+    {
+        "Model": "B1",
+        "Parameters": 8502988,
+        "FLOPs": "N/A",
+        "MACs": "N/A",
+        "Latency(ms)": 30.89,
+        "Throughput": 32.37
+    },
+    {
+        "Model": "B2",
+        "Parameters": 8469580,
+        "FLOPs": "N/A",
+        "MACs": "N/A",
+        "Latency(ms)": 44.94,
+        "Throughput": 22.25
+    },
+    {
+        "Model": "B3",
+        "Parameters": 8251656,
+        "FLOPs": "N/A",
+        "MACs": "N/A",
+        "Latency(ms)": 438.456,
+        "Throughput": 2.28
+    },
+    {
+        "Model": "QSAL",
+        "Parameters": 8296025,
+        "FLOPs": "N/A",
+        "MACs": "N/A",
+        "Latency(ms)": 10653.582,
+        "Throughput": 0.09
+    }
+]

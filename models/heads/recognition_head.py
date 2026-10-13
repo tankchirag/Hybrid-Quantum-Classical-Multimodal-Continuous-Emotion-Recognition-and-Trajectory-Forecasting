@@ -1,62 +1,220 @@
 """
-Recognition Head
+models.heads.recognition_head
+=============================
 
-Maps encoder outputs (B, T, 256) → (B, T, 2)
-Predicts continuous valence–arousal at each time step.
+Current-State Recognition Head
 
-This head is used by:
-    - Baseline B1
-    - Baseline B2 (QSAL)
-    - Baseline B3 (Hybrid)
-    - Any model requiring frame-level VA regression
+Input
+-----
+
+Encoder Outputs
+
+    (B,T,D)
+
+Output
+------
+
+Continuous
+
+    (B)
+
+Discrete
+
+    (B,C)
+
+Design
+
+History Window
+        ↓
+Transformer Encoder
+        ↓
+Last Latent State
+        ↓
+Current-State Prediction
 """
 
+from __future__ import annotations
+
+from typing import Dict
+
+import torch
 import torch.nn as nn
 
 
-class RecognitionHead(nn.Module):
+class RecognitionHead(
+    nn.Module,
+):
     """
-    Lightweight MLP head for continuous VA regression.
+    Current-state recognition head.
+
+    Predicts the label at the
+    current timestep from the final
+    encoder state.
     """
 
     def __init__(
         self,
+        continuous_targets: list[str] | None = None,
+        discrete_targets: dict[str, int] | None = None,
         input_dim: int = 256,
         hidden_dim: int = 128,
-        output_dim: int = 2,
         dropout: float = 0.1,
     ):
-        """
-        Parameters
-        ----------
-        input_dim : int
-            Dimension of encoder output (default: 256).
-        hidden_dim : int
-            Hidden layer size (default: 128).
-        output_dim : int
-            Output dimension (valence, arousal) = 2.
-        dropout : float
-            Dropout applied before final regression.
-        """
         super().__init__()
 
-        self.mlp = nn.Sequential(
-            nn.Linear(input_dim, hidden_dim),
-            nn.ReLU(),
-            nn.Dropout(dropout),
-            nn.Linear(hidden_dim, output_dim),
+        self.continuous_targets = (
+            continuous_targets or []
         )
 
-    def forward(self, x):
-        """
-        Parameters
-        ----------
-        x : Tensor
-            Shape (B, T, 256)
+        self.discrete_targets = (
+            discrete_targets or {}
+        )
 
-        Returns
-        -------
-        Tensor
-            Shape (B, T, 2)
-        """
-        return self.mlp(x)
+        # ----------------------------------
+        # Continuous
+        # ----------------------------------
+
+        self.continuous_heads = (
+            nn.ModuleDict()
+        )
+
+        for target in self.continuous_targets:
+
+            self.continuous_heads[target] = (
+                nn.Sequential(
+
+                    nn.Linear(
+                        input_dim,
+                        hidden_dim,
+                    ),
+
+                    nn.GELU(),
+
+                    nn.Dropout(
+                        dropout,
+                    ),
+
+                    nn.Linear(
+                        hidden_dim,
+                        1,
+                    ),
+                )
+            )
+
+        # ----------------------------------
+        # Discrete
+        # ----------------------------------
+
+        self.discrete_heads = (
+            nn.ModuleDict()
+        )
+
+        for (
+            target,
+            num_classes,
+        ) in self.discrete_targets.items():
+
+            self.discrete_heads[target] = (
+                nn.Sequential(
+
+                    nn.Linear(
+                        input_dim,
+                        hidden_dim,
+                    ),
+
+                    nn.GELU(),
+
+                    nn.Dropout(
+                        dropout,
+                    ),
+
+                    nn.Linear(
+                        hidden_dim,
+                        num_classes,
+                    ),
+                )
+            )
+
+    def forward(
+        self,
+        encoder_outputs: torch.Tensor,
+    ) -> Dict:
+
+        outputs = {
+
+            "continuous": {},
+            "discrete": {},
+        }
+
+        # ==================================
+        # Last Encoder State
+        # ==================================
+
+        current_state = (
+            encoder_outputs[:, -1]
+        )
+
+        # Shape
+
+        # (B,D)
+
+        # ==================================
+        # Continuous
+        # ==================================
+
+        for (
+            name,
+            head,
+        ) in self.continuous_heads.items():
+
+            outputs[
+                "continuous"
+            ][name] = (
+
+                head(
+                    current_state
+                )
+
+                .squeeze(-1)
+            )
+
+        # Result
+
+        # (B)
+
+        # ==================================
+        # Discrete
+        # ==================================
+
+        for (
+            name,
+            head,
+        ) in self.discrete_heads.items():
+
+            outputs[
+                "discrete"
+            ][name] = head(
+                current_state
+            )
+
+        # Result
+
+        # (B,C)
+
+        return outputs
+
+    def summary(
+        self,
+    ):
+
+        return {
+
+            "recognition_type":
+                "current_state",
+
+            "continuous_targets":
+                self.continuous_targets,
+
+            "discrete_targets":
+                self.discrete_targets,
+        }

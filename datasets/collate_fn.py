@@ -1,114 +1,358 @@
-# datasets/collate_fn.py
 """
-multimodal_collate_fn
----------------------
+collate_fn.py
+=============
 
-Unified collate function supporting BOTH:
+Universal Multimodal Collate Function
 
-    • REAL mode (RECOLA / SEWA)
-    • SYNTHETIC mode (QSAL debugging)
+Creates training batches from WindowSample
+objects.
 
-This function converts a list of per-sample dictionaries into a single
-batch dictionary with modality-consistent shapes and types.
+Design Goals
+------------
 
-Unified Modality Contract
--------------------------
-REAL mode:
-    audio : Tensor(B, L_audio)
-    video : Tensor(B, T, 3, H, W)
-    ecg   : Tensor(B, L_ecg)
-    eda   : Tensor(B, L_eda)
-    text  : List[str]      (SEWA)
-            None           (RECOLA)
-    va    : Tensor(B, T, 2)
+✓ Modality Agnostic
 
-SYNTHETIC mode:
-    audio : Tensor(B, L_audio)
-    video : Tensor(B, T, 3, H, W)
-    ecg   : Tensor(B, L_ecg)
-    eda   : Tensor(B, L_eda)
-    text  : Tensor(B, T, D_text)
-    va    : Tensor(B, T, 2)
+✓ Label Agnostic
 
-This ensures:
-    • Baseline B1/B2/B3 receive raw text strings → DistilBERT works
-    • QSAL receives numeric tensors → synthetic debugging works
-    • No None values in synthetic mode → fusion/QSAL stable
-    • All encoders receive correct raw inputs → scientific pipeline preserved
+✓ Dataset Agnostic
+
+✓ Recognition Compatible
+
+✓ Forecasting Compatible
+
+✓ Continuous Labels
+
+✓ Discrete Labels
+
+✓ Continuous Forecasting
+
+✓ Discrete Forecasting
+
+✓ History Label Support
+
+✓ Future Proof
+
+Batch Structure
+---------------
+
+{
+    "modalities": {...},
+
+    "continuous_labels": {...},
+
+    "discrete_labels": {...},
+
+    "recognition_targets": {
+
+        "continuous": {...},
+
+        "discrete": {...}
+    },
+
+    "forecast_targets": {
+
+        "continuous": {...},
+
+        "discrete": {...}
+    },
+
+    "metadata": {...}
+}
 """
+
+from __future__ import annotations
+
+from typing import Any
+from typing import Dict
+from typing import List
 
 import torch
-from typing import List, Dict, Any
 
 
-def multimodal_collate_fn(batch: List[Dict[str, Any]]) -> Dict[str, Any]:
+# ==========================================================
+# Tensor Dictionary Stacking
+# ==========================================================
+
+def _stack_dictionary_tensors(
+    values: List[Dict[str, torch.Tensor]],
+) -> Dict[str, torch.Tensor]:
     """
-    Collate function for UnifiedMultimodalDataset.
+    Stack dictionary tensors.
 
-    Parameters
-    ----------
-    batch : list of dict
-        Each dict contains raw modality data for one sample.
+    Input
 
-    Returns
-    -------
-    dict
+        [
+            {"x": T1},
+            {"x": T2}
+        ]
+
+    Output
+
         {
-            "audio": Tensor(B, L_audio)
-            "video": Tensor(B, T, 3, H, W)
-            "ecg":   Tensor(B, L_ecg)
-            "eda":   Tensor(B, L_eda)
-            "text":  List[str] or Tensor(B, T, D_text) or None
-            "va":    Tensor(B, T, 2)
+            "x": stack(...)
         }
     """
 
-    # ---------------------------------------------------------
-    # AUDIO (always tensor)
-    # ---------------------------------------------------------
-    audio = torch.stack([item["audio"] for item in batch], dim=0)
+    if len(values) == 0:
+        return {}
 
-    # ---------------------------------------------------------
-    # VIDEO (always tensor)
-    # ---------------------------------------------------------
-    video = torch.stack([item["video"] for item in batch], dim=0)
+    keys = set()
 
-    # ---------------------------------------------------------
-    # ECG (tensor or zeros)
-    # ---------------------------------------------------------
-    ecg = torch.stack([item["ecg"] for item in batch], dim=0)
+    for item in values:
+        keys.update(item.keys())
 
-    # ---------------------------------------------------------
-    # EDA (tensor or zeros)
-    # ---------------------------------------------------------
-    eda = torch.stack([item["eda"] for item in batch], dim=0)
+    output = {}
 
-    # ---------------------------------------------------------
-    # TEXT (REAL vs SYNTHETIC)
-    # ---------------------------------------------------------
-    first_text = batch[0]["text"]
+    for key in keys:
 
-    # REAL MODE (SEWA → raw strings, RECOLA → None)
-    if isinstance(first_text, str) or first_text is None:
-        # SEWA: List[str]
-        # RECOLA: None
-        text = [item["text"] for item in batch]
+        tensors = []
 
-    # SYNTHETIC MODE (numeric tensor)
-    else:
-        # item["text"] is Tensor(T, D_text)
-        text = torch.stack([item["text"] for item in batch], dim=0)
+        for item in values:
 
-    # ---------------------------------------------------------
-    # VA LABELS (always tensor)
-    # ---------------------------------------------------------
-    va = torch.stack([item["va"] for item in batch], dim=0)
+            if key in item:
+                tensors.append(item[key])
+
+        if len(tensors) > 0:
+
+            output[key] = torch.stack(
+                tensors,
+                dim=0,
+            )
+
+    return output
+
+
+# ==========================================================
+# Nested Target Stacking
+# ==========================================================
+
+def _stack_target_dictionary(
+    values: List[Dict[str, Dict[str, torch.Tensor]]],
+):
+    """
+    Stack recognition/forecast target dictionaries.
+
+    Example
+
+    Input
+
+        [
+            {
+                "continuous": {
+                    "valence": ...
+                },
+
+                "discrete": {
+                    "emotion_class": ...
+                }
+            }
+        ]
+
+    Output
+
+        {
+            "continuous": {
+                "valence": (B,...)
+            },
+
+            "discrete": {
+                "emotion_class": (B,...)
+            }
+        }
+    """
+
+    output = {
+
+        "continuous": {},
+
+        "discrete": {},
+    }
+
+    # ------------------------------------------
+    # Continuous
+    # ------------------------------------------
+
+    continuous_items = [
+
+        item.get(
+            "continuous",
+            {},
+        )
+
+        for item in values
+    ]
+
+    output[
+        "continuous"
+    ] = _stack_dictionary_tensors(
+        continuous_items
+    )
+
+    # ------------------------------------------
+    # Discrete
+    # ------------------------------------------
+
+    discrete_items = [
+
+        item.get(
+            "discrete",
+            {},
+        )
+
+        for item in values
+    ]
+
+    output[
+        "discrete"
+    ] = _stack_dictionary_tensors(
+        discrete_items
+    )
+
+    return output
+
+
+# ==========================================================
+# Main Collate Function
+# ==========================================================
+
+def multimodal_collate_fn(
+    batch: List[Any],
+) -> Dict[str, Any]:
+    """
+    Universal batch builder.
+    """
+
+    if len(batch) == 0:
+
+        raise ValueError(
+            "Received empty batch."
+        )
+
+    # ------------------------------------------------------
+    # Modalities
+    # ------------------------------------------------------
+
+    modality_batch = (
+        _stack_dictionary_tensors(
+            [
+                sample.modalities
+                for sample in batch
+            ]
+        )
+    )
+
+    # ------------------------------------------------------
+    # Continuous Histories
+    # ------------------------------------------------------
+
+    continuous_batch = (
+        _stack_dictionary_tensors(
+            [
+                sample.continuous_labels
+                for sample in batch
+            ]
+        )
+    )
+
+    # ------------------------------------------------------
+    # Discrete Histories
+    # ------------------------------------------------------
+
+    discrete_batch = (
+        _stack_dictionary_tensors(
+            [
+                sample.discrete_labels
+                for sample in batch
+            ]
+        )
+    )
+
+    # ------------------------------------------------------
+    # Recognition Targets
+    # ------------------------------------------------------
+
+    recognition_batch = (
+        _stack_target_dictionary(
+            [
+                sample.recognition_targets
+                for sample in batch
+            ]
+        )
+    )
+
+    # ------------------------------------------------------
+    # Forecast Targets
+    # ------------------------------------------------------
+
+    forecast_batch = (
+        _stack_target_dictionary(
+            [
+                sample.forecast_targets
+                for sample in batch
+            ]
+        )
+    )
+
+    # ------------------------------------------------------
+    # Metadata
+    # ------------------------------------------------------
+
+    metadata = [
+
+        sample.metadata
+
+        for sample in batch
+    ]
+
+    # ------------------------------------------------------
+    # Active Modalities
+    # ------------------------------------------------------
+
+    active_modalities = list(
+        modality_batch.keys()
+    )
+
+    active_continuous = list(
+        continuous_batch.keys()
+    )
+
+    active_discrete = list(
+        discrete_batch.keys()
+    )
+
+    # ------------------------------------------------------
+    # Output
+    # ------------------------------------------------------
 
     return {
-        "audio": audio,
-        "video": video,
-        "ecg": ecg,
-        "eda": eda,
-        "text": text,
-        "va": va,
+
+        "batch_size":
+            len(batch),
+
+        "active_modalities":
+            active_modalities,
+
+        "active_continuous_labels":
+            active_continuous,
+
+        "active_discrete_labels":
+            active_discrete,
+
+        "modalities":
+            modality_batch,
+
+        "continuous_labels":
+            continuous_batch,
+
+        "discrete_labels":
+            discrete_batch,
+
+        "recognition_targets":
+            recognition_batch,
+
+        "forecast_targets":
+            forecast_batch,
+
+        "metadata":
+            metadata,
     }

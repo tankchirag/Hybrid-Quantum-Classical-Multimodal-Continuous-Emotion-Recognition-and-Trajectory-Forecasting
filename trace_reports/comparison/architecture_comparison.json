@@ -1,0 +1,106 @@
+{
+    "models": {
+        "B1": "Classical self-attention fusion baseline.",
+        "B2": "Projection + concatenation fusion baseline.",
+        "B3": "Pure quantum entanglement fusion baseline.",
+        "QSAL": "Quantum self-attention fusion architecture."
+    },
+    "runtime": {
+        "B1": {
+            "Available": true,
+            "Runtime Modules": 20
+        },
+        "B2": {
+            "Available": true,
+            "Runtime Modules": 20
+        },
+        "B3": {
+            "Available": true,
+            "Runtime Modules": 19
+        },
+        "QSAL": {
+            "Available": true,
+            "Runtime Modules": 22
+        }
+    },
+    "features": {
+        "Feature Extractors": {
+            "B1": true,
+            "B2": true,
+            "B3": true,
+            "QSAL": true
+        },
+        "Tokenizer": {
+            "B1": true,
+            "B2": true,
+            "B3": false,
+            "QSAL": true
+        },
+        "Modality Identity Preserved": {
+            "B1": true,
+            "B2": true,
+            "B3": false,
+            "QSAL": true
+        },
+        "Classical Attention": {
+            "B1": true,
+            "B2": false,
+            "B3": false,
+            "QSAL": false
+        },
+        "Concatenation Fusion": {
+            "B1": false,
+            "B2": true,
+            "B3": false,
+            "QSAL": false
+        },
+        "Unified PQC": {
+            "B1": false,
+            "B2": false,
+            "B3": true,
+            "QSAL": false
+        },
+        "Q-PQC": {
+            "B1": false,
+            "B2": false,
+            "B3": false,
+            "QSAL": true
+        },
+        "K-PQC": {
+            "B1": false,
+            "B2": false,
+            "B3": false,
+            "QSAL": true
+        },
+        "V-PQC": {
+            "B1": false,
+            "B2": false,
+            "B3": false,
+            "QSAL": true
+        },
+        "Gaussian Attention": {
+            "B1": false,
+            "B2": false,
+            "B3": false,
+            "QSAL": true
+        },
+        "Transformer": {
+            "B1": true,
+            "B2": true,
+            "B3": true,
+            "QSAL": true
+        },
+        "Recognition": {
+            "B1": true,
+            "B2": true,
+            "B3": true,
+            "QSAL": true
+        },
+        "Forecasting": {
+            "B1": true,
+            "B2": true,
+            "B3": true,
+            "QSAL": true
+        }
+    }
+}

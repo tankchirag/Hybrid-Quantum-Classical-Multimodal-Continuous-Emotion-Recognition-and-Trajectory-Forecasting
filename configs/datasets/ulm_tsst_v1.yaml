@@ -1,0 +1,182 @@
+# ==========================================================
+# ULM-TSST Dataset
+# Version: V1
+# Full Multimodal Affective Computing Dataset
+# ==========================================================
+
+dataset:
+
+  name: "ulm_tsst"
+
+  version: "v1"
+
+  description: >
+    Full multimodal affective computing dataset
+    generated from the Trier Social Stress Test
+    simulation framework.
+
+  generation_mode: "generate"
+
+# ==========================================================
+# Reproducibility
+# ==========================================================
+
+reproducibility:
+
+  seed: 42
+
+# ==========================================================
+# Dataset Size
+# ==========================================================
+
+samples:
+
+  num_samples: 1000
+
+  num_subjects: 100
+
+  num_sessions_per_subject: 5
+
+# ==========================================================
+# Recording
+# ==========================================================
+
+recording:
+
+  duration_seconds: 300
+
+# ==========================================================
+# Labels
+# ==========================================================
+
+labels:
+
+  label_sampling_rate: 25
+
+# ==========================================================
+# Modalities
+# ==========================================================
+
+modalities:
+
+  ecg: true
+
+  eda: true
+
+  eeg: true
+
+  emg: true
+
+  resp: true
+
+  bpm: true
+
+  eye: true
+
+  audio: true
+
+  video: true
+
+  text: true
+
+# ==========================================================
+# Native Sensor Frequencies
+# ==========================================================
+
+sampling_rates:
+
+  ecg: 1000
+
+  eda: 128
+
+  eeg: 256
+
+  emg: 1000
+
+  resp: 64
+
+  bpm: 4
+
+  eye: 120
+
+  audio: 100
+
+  video: 25
+
+  text: 5
+
+# ==========================================================
+# Continuous Labels
+# ==========================================================
+
+continuous_labels:
+
+  valence: true
+
+  arousal: true
+
+  dominance: true
+
+  stress: true
+
+  workload: true
+
+  fatigue: true
+
+# ==========================================================
+# Discrete Labels
+# ==========================================================
+
+discrete_labels:
+
+  emotion_class: true
+
+  stress_class: true
+
+  workload_class: true
+
+  drowsiness_class: true
+
+  alertness_class: true
+
+# ==========================================================
+# History Configuration
+# ==========================================================
+
+history:
+
+  enabled: true
+
+  history_length: 50
+
+# ==========================================================
+# Forecasting
+# ==========================================================
+
+forecasting:
+
+  enabled: true
+
+  horizon: 25
+
+# ==========================================================
+# Output
+# ==========================================================
+
+output:
+
+  root_dir: "data/generated"
+
+  dataset_name: "ulm_tsst_v1"
+
+  overwrite_existing: false
+
+  save_dataset: true
+
+  save_metadata: true
+
+  save_manifest: true
+
+  save_readme: true
+
+  save_validation_report: true

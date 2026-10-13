@@ -1,62 +1,225 @@
 """
-Forecasting Head
+models.heads.forecasting_head
+=============================
 
-Maps decoder outputs (B, S, 256) → (B, S, 2)
-Predicts future valence–arousal trajectory over S steps.
+Unified Forecasting Head
 
-This head is used by:
-    - Baseline B1 (classical fusion)
-    - Baseline B2 (QSAL)
-    - Baseline B3 (Hybrid)
-    - Any model requiring future VA prediction
+Purpose
+-------
+
+Predict future trajectories from Transformer
+decoder outputs.
+
+Supports:
+
+    • Continuous Forecasting
+
+    • Discrete-State Forecasting
+
+Target selection is entirely configuration driven.
+
+Input
+-----
+
+Decoder Outputs
+
+    (B,S,D)
+
+Default
+
+    D = 256
+
+Output
+------
+
+{
+    "continuous":
+    {
+        target_name:
+            (B,S)
+    },
+
+    "discrete":
+    {
+        target_name:
+            (B,S,C)
+    }
+}
+
+Design Goals
+------------
+
+✓ Dataset Agnostic
+
+✓ Label Agnostic
+
+✓ Continuous Labels
+
+✓ Discrete Labels
+
+✓ Recognition Compatible
+
+✓ Forecasting Compatible
+
+✓ Future Proof
 """
 
+from __future__ import annotations
+
+from typing import Dict
+
+import torch
 import torch.nn as nn
 
 
 class ForecastingHead(nn.Module):
     """
-    Lightweight MLP head for future VA trajectory prediction.
+    Unified forecasting head.
     """
 
     def __init__(
         self,
+        continuous_targets: list[str] | None = None,
+        discrete_targets: dict[str, int] | None = None,
         input_dim: int = 256,
         hidden_dim: int = 128,
-        output_dim: int = 2,
         dropout: float = 0.1,
     ):
-        """
-        Parameters
-        ----------
-        input_dim : int
-            Dimension of decoder output (default: 256).
-        hidden_dim : int
-            Hidden layer size (default: 128).
-        output_dim : int
-            Output dimension (valence, arousal) = 2.
-        dropout : float
-            Dropout applied before final regression.
-        """
         super().__init__()
 
-        self.mlp = nn.Sequential(
-            nn.Linear(input_dim, hidden_dim),
-            nn.ReLU(),
-            nn.Dropout(dropout),
-            nn.Linear(hidden_dim, output_dim),
+        self.continuous_targets = (
+            continuous_targets or []
         )
 
-    def forward(self, x):
+        self.discrete_targets = (
+            discrete_targets or {}
+        )
+
+        # ----------------------------------
+        # Continuous Forecasts
+        # ----------------------------------
+
+        self.continuous_heads = (
+            nn.ModuleDict()
+        )
+
+        for target in self.continuous_targets:
+
+            self.continuous_heads[target] = nn.Sequential(
+
+                nn.Linear(
+                    input_dim,
+                    hidden_dim,
+                ),
+
+                nn.GELU(),
+
+                nn.Dropout(
+                    dropout,
+                ),
+
+                nn.Linear(
+                    hidden_dim,
+                    1,
+                ),
+            )
+
+        # ----------------------------------
+        # Discrete Forecasts
+        # ----------------------------------
+
+        self.discrete_heads = (
+            nn.ModuleDict()
+        )
+
+        for (
+            target,
+            num_classes,
+        ) in self.discrete_targets.items():
+
+            self.discrete_heads[target] = nn.Sequential(
+
+                nn.Linear(
+                    input_dim,
+                    hidden_dim,
+                ),
+
+                nn.GELU(),
+
+                nn.Dropout(
+                    dropout,
+                ),
+
+                nn.Linear(
+                    hidden_dim,
+                    num_classes,
+                ),
+            )
+
+    def forward(
+        self,
+        decoder_outputs: torch.Tensor,
+    ) -> Dict[str, Dict[str, torch.Tensor]]:
         """
         Parameters
         ----------
-        x : Tensor
-            Shape (B, S, 256)
+        decoder_outputs
+
+            (B,S,256)
 
         Returns
         -------
-        Tensor
-            Shape (B, S, 2)
+        Dict
         """
-        return self.mlp(x)
+
+        outputs = {
+
+            "continuous": {},
+
+            "discrete": {},
+        }
+
+        # ----------------------------------
+        # Continuous Forecasts
+        # ----------------------------------
+
+        for (
+            name,
+            head,
+        ) in self.continuous_heads.items():
+
+            outputs[
+                "continuous"
+            ][name] = head(
+                decoder_outputs
+            ).squeeze(-1)
+
+        # ----------------------------------
+        # Discrete Forecasts
+        # ----------------------------------
+
+        for (
+            name,
+            head,
+        ) in self.discrete_heads.items():
+
+            outputs[
+                "discrete"
+            ][name] = head(
+                decoder_outputs
+            )
+
+        return outputs
+
+    def summary(
+        self,
+    ) -> dict:
+
+        return {
+
+            "continuous_targets":
+                self.continuous_targets,
+
+            "discrete_targets":
+                self.discrete_targets,
+        }

@@ -1,27 +1,170 @@
 """
-Classical Self-Attention Fusion (Baseline B1)
+models.fusion.classical_fusion
+=============================
 
-Implements the baseline fusion mechanism described in the thesis:
-- Input: modality tokens of shape (B, T, M, D)
-    * B = batch size
-    * T = temporal length (history window)
-    * M = number of modalities (e.g., 4 or 5)
-    * D = embedding dimension (e.g., 128)
+Classical Token Fusion (Baseline B1)
 
-Fusion pipeline:
-    1. Project each modality token from D → fusion_dim (e.g., 64)
-    2. Perform multi-head self-attention over the M modality tokens at each frame
-    3. Pool the attended modality tokens into a single fused token (fusion_dim)
-    4. Project fused token to Transformer model dimension (transformer_dim, e.g., 256)
+Purpose
+-------
 
-Output:
-    fused: (B, T, transformer_dim)
+Fuse multiple token streams into a single
+temporal representation suitable for:
 
-This module is used by:
-    - Baseline B1 (classical fusion)
-    - Can be reused by other baselines / QSAL variants that expect
-      a fused temporal representation per frame.
+    • Continuous Emotion Recognition
+
+    • Discrete Emotion Classification
+
+    • Stress Recognition
+
+    • Workload Recognition
+
+    • Alertness / Drowsiness Recognition
+
+    • Trajectory Forecasting
+
+    • Classical Transformer Models
+
+The mathematical formulation remains identical
+to the original thesis baseline while the
+interface is generalized for the unified
+multimodal framework.
+
+Design Philosophy
+-----------------
+
+This module operates on tokens rather than
+modalities.
+
+The fusion layer does NOT know whether a token
+originates from:
+
+    ECG
+    EDA
+    EEG
+    EMG
+    RESP
+    BPM
+
+    Eye Tracking
+
+    Audio
+
+    Video
+
+    Text
+
+    Continuous Label History
+
+    Discrete Label History
+
+    Future Task Tokens
+
+    CLS Tokens
+
+Any source capable of producing token embeddings
+may participate in fusion.
+
+Input
+-----
+
+tokens
+
+    Shape:
+
+        (B, T, N, D)
+
+where
+
+    B = Batch Size
+
+    T = Temporal Length
+
+    N = Number of Active Tokens
+
+    D = Token Embedding Dimension
+
+Default
+
+    D = 128
+
+Fusion Pipeline
+---------------
+
+1. Token Projection
+
+        D
+            ↓
+        fusion_dim
+
+2. Multi-Head Self Attention
+
+        Across N tokens
+
+3. Residual Connection
+
+4. Layer Normalization
+
+5. Token Pooling
+
+        Mean Pooling
+
+6. Transformer Projection
+
+        fusion_dim
+            ↓
+        transformer_dim
+
+Output
+------
+
+fused
+
+    Shape:
+
+        (B, T, transformer_dim)
+
+Default
+
+    transformer_dim = 256
+
+Design Goals
+------------
+
+✓ Dataset Agnostic
+
+✓ Label Agnostic
+
+✓ Continuous Labels
+
+✓ Discrete Labels
+
+✓ Variable Token Count
+
+✓ Recognition Compatible
+
+✓ Forecasting Compatible
+
+✓ Missing Token Compatible
+
+✓ Future Proof
+
+Used By
+-------
+
+Baseline B1
+
+Potentially reusable for:
+
+    B2
+
+    B3
+
+    QSAL Variants
+
+    Future Hybrid Architectures
 """
+
+from __future__ import annotations
 
 import torch
 import torch.nn as nn
@@ -29,13 +172,15 @@ import torch.nn as nn
 
 class ClassicalFusion(nn.Module):
     """
-    Classical self-attention fusion over modality tokens.
+    Classical self-attention token fusion.
 
     Input:
-        tokens: (B, T, M, D)
+
+        (B, T, N, D)
 
     Output:
-        fused: (B, T, transformer_dim)
+
+        (B, T, transformer_dim)
     """
 
     def __init__(
@@ -46,20 +191,6 @@ class ClassicalFusion(nn.Module):
         num_heads: int = 2,
         dropout: float = 0.1,
     ) -> None:
-        """
-        Parameters
-        ----------
-        emb_dim : int
-            Input dimension of each modality token (default: 128).
-        fusion_dim : int
-            Intermediate fusion dimension after projection (default: 64).
-        transformer_dim : int
-            Output dimension for the temporal Transformer backbone (default: 256).
-        num_heads : int
-            Number of attention heads for modality self-attention.
-        dropout : float
-            Dropout applied after attention and projections.
-        """
         super().__init__()
 
         self.emb_dim = emb_dim
@@ -67,19 +198,23 @@ class ClassicalFusion(nn.Module):
         self.transformer_dim = transformer_dim
         self.num_heads = num_heads
 
-        # ------------------------------------------------------------------
-        # 1. Linear projection for modality tokens
-        #    - Shared across modalities:
-        #          R^{emb_dim} → R^{fusion_dim}
-        #    - This brings all modality tokens into a common fusion space.
-        # ------------------------------------------------------------------
-        self.input_proj = nn.Linear(emb_dim, fusion_dim)
+        # --------------------------------------------------
+        # Input Projection
+        #
+        # D -> fusion_dim
+        # --------------------------------------------------
 
-        # ------------------------------------------------------------------
-        # 2. Multi-head self-attention over modalities
-        #    - Sequence length = M (number of modalities)
-        #    - Operates independently for each (B, T) pair.
-        # ------------------------------------------------------------------
+        self.input_proj = nn.Linear(
+            emb_dim,
+            fusion_dim,
+        )
+
+        # --------------------------------------------------
+        # Token Self-Attention
+        #
+        # Operates across token dimension N.
+        # --------------------------------------------------
+
         self.attn = nn.MultiheadAttention(
             embed_dim=fusion_dim,
             num_heads=num_heads,
@@ -87,74 +222,184 @@ class ClassicalFusion(nn.Module):
             dropout=dropout,
         )
 
-        # ------------------------------------------------------------------
-        # 3. Normalization and dropout
-        # ------------------------------------------------------------------
-        self.norm = nn.LayerNorm(fusion_dim)
-        self.dropout = nn.Dropout(dropout)
+        # --------------------------------------------------
+        # Residual Normalization
+        # --------------------------------------------------
 
-        # ------------------------------------------------------------------
-        # 4. Projection to Transformer model dimension
-        #    - Fused token: fusion_dim → transformer_dim
-        # ------------------------------------------------------------------
-        self.to_transformer = nn.Linear(fusion_dim, transformer_dim)
+        self.norm = nn.LayerNorm(
+            fusion_dim
+        )
 
-    def forward(self, tokens: torch.Tensor) -> torch.Tensor:
+        self.dropout = nn.Dropout(
+            dropout
+        )
+
+        # --------------------------------------------------
+        # Projection to Transformer Space
+        #
+        # fusion_dim -> transformer_dim
+        # --------------------------------------------------
+
+        self.to_transformer = nn.Linear(
+            fusion_dim,
+            transformer_dim,
+        )
+
+    # --------------------------------------------------
+    # Forward
+    # --------------------------------------------------
+
+    def forward(
+        self,
+        tokens: torch.Tensor,
+    ) -> torch.Tensor:
         """
         Parameters
         ----------
         tokens : Tensor
-            Shape (B, T, M, D)
-                B = batch size
-                T = temporal length
-                M = number of modalities
-                D = emb_dim
+
+            Shape:
+
+                (B,T,N,D)
 
         Returns
         -------
-        fused : Tensor
-            Shape (B, T, transformer_dim)
+        Tensor
+
+            Shape:
+
+                (B,T,transformer_dim)
         """
-        B, T, M, D = tokens.shape
 
-        # ------------------------------------------------------------------
-        # 1. Merge batch and time for modality-wise attention
-        #    (B, T, M, D) → (B*T, M, D)
-        # ------------------------------------------------------------------
-        x = tokens.view(B * T, M, D)
+        if tokens.ndim != 4:
+            raise ValueError(
+                "Expected token tensor with shape "
+                "(B,T,N,D), received "
+                f"{tuple(tokens.shape)}"
+            )
 
-        # ------------------------------------------------------------------
-        # 2. Project to fusion_dim
-        #    (B*T, M, D) → (B*T, M, fusion_dim)
-        # ------------------------------------------------------------------
-        x = self.input_proj(x)
+        B, T, N, D = tokens.shape
 
-        # ------------------------------------------------------------------
-        # 3. Self-attention over modalities
-        #    - Query, key, value are all modality tokens
-        #    - Output: (B*T, M, fusion_dim)
-        # ------------------------------------------------------------------
-        attn_out, _ = self.attn(x, x, x)
+        # ----------------------------------------------
+        # Merge Batch and Time
+        #
+        # (B,T,N,D)
+        #
+        # ->
+        #
+        # (B*T,N,D)
+        # ----------------------------------------------
 
-        # Residual + normalization
-        x = self.norm(x + self.dropout(attn_out))  # (B*T, M, fusion_dim)
+        x = tokens.reshape(
+            B * T,
+            N,
+            D,
+        )
 
-        # ------------------------------------------------------------------
-        # 4. Pool over modality dimension M
-        #    - Mean pooling: (B*T, M, fusion_dim) → (B*T, fusion_dim)
-        # ------------------------------------------------------------------
-        fused = x.mean(dim=1)  # (B*T, fusion_dim)
+        # ----------------------------------------------
+        # Project Tokens
+        #
+        # D -> fusion_dim
+        # ----------------------------------------------
 
-        # ------------------------------------------------------------------
-        # 5. Project to Transformer dimension
-        #    (B*T, fusion_dim) → (B*T, transformer_dim)
-        # ------------------------------------------------------------------
-        fused = self.to_transformer(fused)
-        fused = self.dropout(fused)
+        x = self.input_proj(
+            x
+        )
 
-        # ------------------------------------------------------------------
-        # 6. Reshape back to (B, T, transformer_dim)
-        # ------------------------------------------------------------------
-        fused = fused.view(B, T, self.transformer_dim)
+        # ----------------------------------------------
+        # Token Self-Attention
+        # ----------------------------------------------
+
+        attn_out, _ = self.attn(
+            x,
+            x,
+            x,
+        )
+
+        # ----------------------------------------------
+        # Residual + LayerNorm
+        # ----------------------------------------------
+
+        x = self.norm(
+            x +
+            self.dropout(
+                attn_out
+            )
+        )
+
+        # ----------------------------------------------
+        # Token Pooling
+        #
+        # (B*T,N,F)
+        #
+        # ->
+        #
+        # (B*T,F)
+        # ----------------------------------------------
+
+        fused = x.mean(
+            dim=1
+        )
+
+        # ----------------------------------------------
+        # Transformer Projection
+        # ----------------------------------------------
+
+        fused = self.to_transformer(
+            fused
+        )
+
+        fused = self.dropout(
+            fused
+        )
+
+        # ----------------------------------------------
+        # Restore Temporal Structure
+        # ----------------------------------------------
+
+        fused = fused.view(
+            B,
+            T,
+            self.transformer_dim,
+        )
 
         return fused
+
+    # --------------------------------------------------
+    # Metadata
+    # --------------------------------------------------
+
+    def summary(
+        self,
+    ) -> dict:
+        """
+        Return fusion metadata.
+        """
+
+        return {
+            "fusion_type":
+                "classical_attention",
+
+            "token_dim":
+                self.emb_dim,
+
+            "fusion_dim":
+                self.fusion_dim,
+
+            "transformer_dim":
+                self.transformer_dim,
+
+            "num_heads":
+                self.num_heads,
+        }
+
+    def extra_repr(
+        self,
+    ) -> str:
+
+        return (
+            f"emb_dim={self.emb_dim}, "
+            f"fusion_dim={self.fusion_dim}, "
+            f"transformer_dim={self.transformer_dim}, "
+            f"num_heads={self.num_heads}"
+        )

@@ -5,43 +5,50 @@ MultimodalFeatureExtractors
 
 Unified feature extractor module supporting BOTH:
 
-    • REAL mode (RECOLA / SEWA)
-        - Receives raw signals (audio/video/ecg/eda)
+    • REAL mode (RECOLA / SEWA / future ULM‑TSST)
+        - Receives raw signals (audio/video/ecg/eda/eeg/emg/resp/bpm/eye)
         - Receives raw text strings (SEWA)
         - Uses modality-specific encoders:
-              AudioEncoder, VideoEncoder, ECGEncoder, EDAEncoder, TextEncoder
-        - Produces (B, T, 128) embeddings for ALL modalities
+              AudioEncoder, VideoEncoder, TextEncoder,
+              ECGEncoder, EDAEncoder,
+              EEGEncoder, EMGEncoder, RESPEncoder, BPMEncoder, EyeTrackingEncoder
+        - Produces (B, T, 128) embeddings for ALL active modalities
 
-    • SYNTHETIC mode (QSAL / baselines debugging)
+    • SYNTHETIC mode (QSAL / baselines debugging / synthetic ULM‑TSST)
         - Receives numeric tensors for all modalities
         - Encoders operate in synthetic mode
         - Produces (B, T, 128) embeddings
 
 Design goals:
-    - Dynamic, modality-flexible: audio/video/ecg/eda always supported,
-      text optional via include_text flag.
-    - Safe handling of REAL vs SYNTHETIC text:
-        * RECOLA: text=None → zeros
-        * SEWA: list of strings → TextEncoder
-        * Synthetic: tensor or list → TextEncoder, then stacked to tensor
-    - Guarantee that all outputs are tensors of shape (B, T, emb_dim),
-      never Python lists.
+    - Fully modality-agnostic: any subset of modalities can be enabled.
+    - Dataset-agnostic: RECOLA, SEWA, ULM‑TSST, custom datasets.
+    - Label-agnostic: VA, VAD, stress, workload, etc.
+    - Safe handling of REAL vs SYNTHETIC text.
+    - Guarantee that all outputs are tensors of shape (B, T, emb_dim).
 
-Fully aligned with:
-    - UnifiedMultimodalDataset
+Aligned with:
+    - SyntheticULMTSSTDataset
+    - Synchronizer
     - multimodal_collate_fn
-    - TextEncoder (real + synthetic)
     - ModalityTokenizer / QSALFusion / Baseline B1/B2/B3
 """
 
 import torch
 import torch.nn as nn
 
+# Existing encoders
 from .audio_encoder import AudioEncoder
 from .video_encoder import VideoEncoder
 from .ecg_encoder import ECGEncoder
 from .eda_encoder import EDAEncoder
 from .text_encoder import TextEncoder
+
+# NEW encoders for ULM‑TSST
+from .eeg_encoder import EEGEncoder
+from .emg_encoder import EMGEncoder
+from .resp_encoder import RESPEncoder
+from .bpm_encoder import BPMEncoder
+from .eye_encoder import EyeTrackingEncoder
 
 
 class MultimodalFeatureExtractors(nn.Module):
@@ -54,7 +61,12 @@ class MultimodalFeatureExtractors(nn.Module):
             "video": (B, T, 128),
             "ecg":   (B, T, 128),
             "eda":   (B, T, 128),
-            "text":  (B, T, 128) or None (if include_text=False and caller skips it)
+            "eeg":   (B, T, 128),
+            "emg":   (B, T, 128),
+            "resp":  (B, T, 128),
+            "bpm":   (B, T, 128),
+            "eye":   (B, T, 128),
+            "text":  (B, T, 128)
         }
     """
 
@@ -63,158 +75,153 @@ class MultimodalFeatureExtractors(nn.Module):
         emb_dim: int = 128,
         synthetic: bool = True,
         target_seq_len: int = 50,
+        modalities: dict = None,
         include_text: bool = True,
     ):
+        """
+        Parameters
+        ----------
+        emb_dim : int
+            Embedding dimension for all encoders (fixed at 128).
+
+        synthetic : bool
+            Whether encoders operate in synthetic mode.
+
+        target_seq_len : int
+            Temporal sequence length T.
+
+        modalities : dict
+            Dictionary of modality flags, e.g.:
+                {
+                    "audio": True,
+                    "video": True,
+                    "ecg": True,
+                    "eda": True,
+                    "eeg": True,
+                    "emg": True,
+                    "resp": True,
+                    "bpm": True,
+                    "eye": True,
+                    "text": True
+                }
+
+        include_text : bool
+            Whether to instantiate the text encoder.
+        """
         super().__init__()
 
         self.synthetic = synthetic
-        self.include_text = include_text
         self.target_seq_len = target_seq_len
         self.emb_dim = emb_dim
+        self.modalities = modalities or {}
+        self.include_text = include_text
 
         # ---------------------------------------------------------
-        # Instantiate encoders (REAL or SYNTHETIC mode)
+        # Instantiate encoders dynamically based on modality flags
         # ---------------------------------------------------------
-        self.audio_encoder = AudioEncoder(
-            emb_dim=emb_dim,
-            synthetic=synthetic,
-            target_seq_len=target_seq_len,
-        )
+        self.encoders = nn.ModuleDict()
 
-        self.video_encoder = VideoEncoder(
-            emb_dim=emb_dim,
-            synthetic=synthetic,
-            target_seq_len=target_seq_len,
-        )
+        if self.modalities.get("audio", False):
+            self.encoders["audio"] = AudioEncoder(emb_dim, synthetic, target_seq_len)
 
-        self.ecg_encoder = ECGEncoder(
-            emb_dim=emb_dim,
-            synthetic=synthetic,
-            target_seq_len=target_seq_len,
-        )
+        if self.modalities.get("video", False):
+            self.encoders["video"] = VideoEncoder(emb_dim, synthetic, target_seq_len)
 
-        self.eda_encoder = EDAEncoder(
-            emb_dim=emb_dim,
-            synthetic=synthetic,
-            target_seq_len=target_seq_len,
-        )
+        if self.modalities.get("ecg", False):
+            self.encoders["ecg"] = ECGEncoder(emb_dim, synthetic, target_seq_len)
 
-        if include_text:
-            self.text_encoder = TextEncoder(
-                emb_dim=emb_dim,
-                synthetic=synthetic,
-                target_seq_len=target_seq_len,
-            )
-        else:
-            self.text_encoder = None
+        if self.modalities.get("eda", False):
+            self.encoders["eda"] = EDAEncoder(emb_dim, synthetic, target_seq_len)
 
+        if self.modalities.get("eeg", False):
+            self.encoders["eeg"] = EEGEncoder(emb_dim, synthetic, target_seq_len)
+
+        if self.modalities.get("emg", False):
+            self.encoders["emg"] = EMGEncoder(emb_dim, synthetic, target_seq_len)
+
+        if self.modalities.get("resp", False):
+            self.encoders["resp"] = RESPEncoder(emb_dim, synthetic, target_seq_len)
+
+        if self.modalities.get("bpm", False):
+            self.encoders["bpm"] = BPMEncoder(emb_dim, synthetic, target_seq_len)
+
+        if self.modalities.get("eye", False):
+            self.encoders["eye"] = EyeTrackingEncoder(emb_dim, synthetic, target_seq_len)
+
+        if include_text and self.modalities.get("text", False):
+            self.encoders["text"] = TextEncoder(emb_dim, synthetic, target_seq_len)
+
+    # ---------------------------------------------------------
+    # Utility: ensure TextEncoder outputs are tensors
+    # ---------------------------------------------------------
     def _ensure_tensor(self, x, device):
-        """
-        Utility: convert TextEncoder outputs (which may be lists)
-        into a proper tensor of shape (B, T, emb_dim).
-
-        Supported cases:
-            - torch.Tensor → returned as-is
-            - list of torch.Tensor → stacked along batch dim
-            - list of list/ndarray → converted to tensor and stacked
-        """
         if isinstance(x, torch.Tensor):
             return x.to(device)
 
         if isinstance(x, list):
-            # If elements are tensors, stack them
             if isinstance(x[0], torch.Tensor):
                 return torch.stack(x, dim=0).to(device)
-            # If elements are lists/arrays, convert each to tensor then stack
             else:
                 tensors = [torch.as_tensor(e, device=device) for e in x]
                 return torch.stack(tensors, dim=0)
 
-        raise ValueError(f"TextEncoder output has unsupported type: {type(x)}")
+        raise ValueError(f"Unsupported text encoder output type: {type(x)}")
 
-    # -------------------------------------------------------------
+    # ---------------------------------------------------------
     # FORWARD PASS
-    # -------------------------------------------------------------
+    # ---------------------------------------------------------
     def forward(self, batch):
         """
         Parameters
         ----------
         batch : dict
-            Contains raw signals (REAL mode) or numeric tensors (SYNTHETIC).
+            Raw or synthetic signals for all modalities.
 
         Returns
         -------
         dict
-            Modality embeddings (B, T, 128)
+            {
+                modality_name: (B, T, 128)
+            }
         """
-
         outputs = {}
+        device = None
+
+        # Determine device from first available modality
+        for key in batch:
+            if isinstance(batch[key], torch.Tensor):
+                device = batch[key].device
+                break
 
         # ---------------------------------------------------------
-        # AUDIO
+        # Process each modality dynamically
         # ---------------------------------------------------------
-        outputs["audio"] = self.audio_encoder(batch["audio"])
+        for modality_name, encoder in self.encoders.items():
 
-        # ---------------------------------------------------------
-        # VIDEO
-        # ---------------------------------------------------------
-        outputs["video"] = self.video_encoder(batch["video"])
+            raw_input = batch.get(modality_name, None)
 
-        # ---------------------------------------------------------
-        # ECG
-        # ---------------------------------------------------------
-        outputs["ecg"] = self.ecg_encoder(batch["ecg"])
+            # TEXT special handling
+            if modality_name == "text":
+                if raw_input is None:
+                    B = next(iter(outputs.values())).size(0)
+                    outputs["text"] = torch.zeros(
+                        B, self.target_seq_len, self.emb_dim, device=device
+                    )
+                elif isinstance(raw_input, list) and isinstance(raw_input[0], str):
+                    text_emb = encoder(raw_input)
+                    outputs["text"] = self._ensure_tensor(text_emb, device)
+                else:
+                    text_emb = encoder(raw_input)
+                    outputs["text"] = self._ensure_tensor(text_emb, device)
+                continue
 
-        # ---------------------------------------------------------
-        # EDA
-        # ---------------------------------------------------------
-        outputs["eda"] = self.eda_encoder(batch["eda"])
-
-        # ---------------------------------------------------------
-        # TEXT (REAL vs SYNTHETIC vs RECOLA)
-        # ---------------------------------------------------------
-        if self.include_text and self.text_encoder is not None:
-
-            text_input = batch.get("text", None)
-            device = outputs["audio"].device
-
-            # Case 1: RECOLA (no text) → text_input is None
-            if text_input is None:
-                B = outputs["audio"].size(0)
-                outputs["text"] = torch.zeros(
-                    B, self.target_seq_len, self.emb_dim,
-                    device=device
+            # Non-text modalities
+            if raw_input is None:
+                B = next(iter(outputs.values())).size(0)
+                outputs[modality_name] = torch.zeros(
+                    B, self.target_seq_len, self.emb_dim, device=device
                 )
-
-            # Case 2: REAL SEWA — list of raw strings
-            elif isinstance(text_input, list) and len(text_input) > 0 and isinstance(text_input[0], str):
-                # TextEncoder handles list[str]; may return tensor or list
-                text_emb = self.text_encoder(text_input)
-                outputs["text"] = self._ensure_tensor(text_emb, device)
-
-            # Case 3: SYNTHETIC — numeric tensor (B, T, D) or similar
-            elif isinstance(text_input, torch.Tensor):
-                text_emb = self.text_encoder(text_input)
-                outputs["text"] = self._ensure_tensor(text_emb, device)
-
-            # Case 4: SYNTHETIC — list of tensors / numeric sequences
-            elif isinstance(text_input, list):
-                # Pass through TextEncoder; then normalize to tensor
-                text_emb = self.text_encoder(text_input)
-                outputs["text"] = self._ensure_tensor(text_emb, device)
-
-            # Unexpected type
             else:
-                raise ValueError(
-                    f"Unsupported text input type in MultimodalFeatureExtractors: {type(text_input)}"
-                )
-
-        else:
-            # Text disabled → either omit or provide zeros for downstream safety
-            B = outputs["audio"].size(0)
-            outputs["text"] = torch.zeros(
-                B, self.target_seq_len, self.emb_dim,
-                device=outputs["audio"].device
-            )
+                outputs[modality_name] = encoder(raw_input)
 
         return outputs

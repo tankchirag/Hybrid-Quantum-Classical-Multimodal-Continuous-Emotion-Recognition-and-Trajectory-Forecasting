@@ -1,147 +1,178 @@
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
+"""
+models.encoders.video_encoder
+=============================
 
-try:
-    from torchvision import models
-    _TV_AVAILABLE = True
-except ImportError:
-    _TV_AVAILABLE = False
+Video Encoder
+
+Purpose
+-------
+
+Transforms synchronized video-derived features
+into latent temporal representations.
+
+The encoder is:
+
+    • Dataset Agnostic
+    • Label Agnostic
+    • Task Agnostic
+
+Input
+-----
+
+Video Signal
+
+    (B,T,C)
+
+Current ULM-TSST Channels
+-------------------------
+
+Channel 0
+
+    Facial Motion
+
+Channel 1
+
+    Smile Intensity
+
+Future Extensions
+-----------------
+
+Supports additional facial feature channels:
+
+    Facial Action Units
+
+    Face Embeddings
+
+    Head Pose
+
+    Eye Contact
+
+    Expression Features
+
+    MediaPipe Features
+
+    OpenFace Features
+
+without changing downstream modules.
+
+Output
+------
+
+Video Embedding
+
+    (B,T,D)
+
+Default
+
+    D = 128
+
+Design Goals
+------------
+
+✓ Dataset Agnostic
+
+✓ Label Agnostic
+
+✓ Continuous Labels
+
+✓ Discrete Labels
+
+✓ Recognition Compatible
+
+✓ Forecasting Compatible
+
+✓ Sensor Agnostic
+
+✓ Future Proof
+
+Supported Datasets
+------------------
+
+RECOLA
+
+SEWA
+
+ULM-TSST
+
+Future Video Datasets
+
+Notes
+-----
+
+The encoder assumes inputs have already
+been synchronized onto a common timeline.
+
+Therefore it remains independent of:
+
+    frame rate
+
+    dataset
+
+    labels
+
+    task type
+
+Its only responsibility is:
+
+    Video Features
+        ↓
+    Representation
+"""
+
+from __future__ import annotations
+
+from .temporal_conv_encoder import (
+    TemporalConvEncoder,
+)
 
 
-class VideoEncoder(nn.Module):
+class VideoEncoder(
+    TemporalConvEncoder,
+):
     """
-    VideoEncoder
-    ------------
-    Frame-level video feature extractor using ResNet18 → 128-dim projection.
+    Video temporal encoder.
 
-    This module supports two modes:
+    Input
+    -----
 
-    synthetic = True:
-        - Used during synthetic dataset experiments.
-        - Ignores input video frames and returns random embeddings of shape (B, T, 128).
-        - Ensures the architecture remains identical to the real pipeline.
-
-    synthetic = False:
-        - Used for real datasets (e.g., RECOLA, SEWA).
-        - Expects raw video frames of shape (B, T, 3, H, W).
-        - Applies ResNet18 (pretrained) to each frame independently.
-        - Extracts 512-dim features from the penultimate layer.
-        - Projects to 128-dim.
-        - Interpolates temporal dimension to fixed sequence length T.
-
-    Parameters
-    ----------
-    emb_dim : int
-        Output embedding dimension (fixed at 128 for your thesis).
-    synthetic : bool
-        Whether to operate in synthetic mode.
-    freeze_backbone : bool
-        Whether to freeze ResNet18 parameters during training.
-    target_seq_len : int
-        Number of time steps T expected by the fusion/transformer pipeline.
-
-    Input (real mode)
-    -----------------
-    video : Tensor
-        Raw video frames of shape (B, T, 3, H, W).
+        (B,T,C)
 
     Output
     ------
-    video_emb : Tensor
-        Frame-level embeddings of shape (B, T, 128).
+
+        (B,T,D)
+
+    Default
+
+        C = 2
+        D = 128
     """
 
     def __init__(
         self,
-        emb_dim: int = 128,
-        synthetic: bool = True,
-        freeze_backbone: bool = True,
-        target_seq_len: int = 50,
+        embedding_dim: int = 128,
+        hidden_dim: int = 64,
+        num_layers: int = 3,
+        kernel_size: int = 5,
+        dropout: float = 0.1,
+        input_channels: int = 2,
     ):
-        super().__init__()
-        self.synthetic = synthetic
-        self.emb_dim = emb_dim
-        self.target_seq_len = target_seq_len
-
-        # Synthetic mode: no backbone needed
-        if synthetic:
-            self.backbone = None
-            self.proj = None
-            return
-
-        # Real mode: load ResNet18
-        assert _TV_AVAILABLE, "Install torchvision to use ResNet18."
-
-        resnet = models.resnet18(weights=models.ResNet18_Weights.IMAGENET1K_V1)
-        modules = list(resnet.children())[:-1]  # remove final FC
-        self.backbone = nn.Sequential(*modules)  # outputs (B, 512, 1, 1)
-
-        if freeze_backbone:
-            for p in self.backbone.parameters():
-                p.requires_grad = False
-
-        self.proj = nn.Linear(512, emb_dim)
-
-    def forward(self, video):
-        """
-        Forward pass for video encoding.
-
-        Parameters
-        ----------
-        video : Tensor
-            - Synthetic mode: ignored.
-            - Real mode: raw video frames (B, T, 3, H, W).
-
-        Returns
-        -------
-        Tensor
-            Video embeddings of shape (B, T, 128).
-        """
-
-        # ---------------------------------------------------------
-        # SYNTHETIC MODE: return random embeddings (B, T, 128)
-        # ---------------------------------------------------------
-        if self.synthetic:
-            if isinstance(video, torch.Tensor):
-                B = video.size(0)
-                device = video.device
-            else:
-                B = 1
-                device = torch.device("cpu")
-
-            return torch.randn(B, self.target_seq_len, self.emb_dim, device=device)
-
-        # ---------------------------------------------------------
-        # REAL MODE: ResNet18 frame-level feature extraction
-        # ---------------------------------------------------------
-        B, T, C, H, W = video.shape
-        device = video.device
-
-        # reshape to process frames independently
-        video = video.reshape(B * T, C, H, W)  # (B*T, 3, H, W)
-
-        with torch.set_grad_enabled(self.backbone.training):
-            feats = self.backbone(video)  # (B*T, 512, 1, 1)
-
-        feats = feats.view(B, T, 512)  # (B, T, 512)
-
-        # project to 128
-        emb = self.proj(feats)  # (B, T, 128)
-
-        # ---------------------------------------------------------
-        # TEMPORAL ALIGNMENT: interpolate to fixed T
-        # ---------------------------------------------------------
-        if T == self.target_seq_len:
-            return emb
-
-        emb = emb.permute(0, 2, 1)  # (B, 128, T)
-        emb = F.interpolate(
-            emb,
-            size=self.target_seq_len,
-            mode="linear",
-            align_corners=False,
+        super().__init__(
+            input_channels=input_channels,
+            embedding_dim=embedding_dim,
+            hidden_dim=hidden_dim,
+            num_layers=num_layers,
+            kernel_size=kernel_size,
+            dropout=dropout,
+            modality_name="video",
         )
-        emb = emb.permute(0, 2, 1)  # (B, T, 128)
 
-        return emb
+    @property
+    def modality(
+        self,
+    ) -> str:
+        """
+        Modality identifier.
+        """
+
+        return "video"

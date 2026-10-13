@@ -1,103 +1,211 @@
-# models/temporal/transformer_ed.py
 """
-Transformer Encoder–Decoder for Temporal Modeling
--------------------------------------------------
+models.temporal.transformer_ed
+==============================
 
-This module implements the temporal backbone shared by:
+Unified Transformer Encoder-Decoder
 
-    • Baseline B1 (classical fusion)
-    • Baseline B2 (classical + projection)
-    • Baseline B3 (PQC fusion)
-    • QSAL (Quantum Self‑Attention Layer)
-
-It performs:
-    1. Concatenation of fused multimodal features with VA history
-    2. Linear projection back to d_model
-    3. Positional encoding
-    4. Transformer encoder over frame-level tokens
-    5. Transformer decoder over learned forecasting queries
-
-Inputs
-------
-fused   : (B, T, d_model)
-    Fused multimodal features from fusion module.
-
-va_hist : (B, T, 2)
-    Aligned valence–arousal history.
-
-Outputs
+Purpose
 -------
-enc_out : (B, T, d_model)
-    Encoder outputs for recognition.
 
-dec_out : (B, S, d_model)
-    Decoder outputs for forecasting horizon S.
+Temporal modeling backbone shared by:
 
-This version is fully aligned with the unified modality contract and
-supports REAL + SYNTHETIC dataset modes.
+    • Baseline B1
+    • Baseline B2
+    • Baseline B3
+    • QSAL
+
+The module performs:
+
+    Historical Context Modeling
+
+        +
+
+    Future Trajectory Modeling
+
+using a Transformer Encoder-Decoder architecture.
+
+Unlike earlier implementations, the temporal model
+supports arbitrary label-history dimensionalities.
+
+Design Goals
+------------
+
+✓ Dataset Agnostic
+
+✓ Label Agnostic
+
+✓ Continuous Labels
+
+✓ Discrete Labels
+
+✓ Recognition Compatible
+
+✓ Forecasting Compatible
+
+✓ Variable History Dimension
+
+✓ Future Proof
+
+Input
+-----
+
+fused
+
+    (B,T,d_model)
+
+Optional
+
+label_history
+
+    (B,T,L)
+
+where
+
+    L = number of historical targets
+
+Examples
+
+    L = 0
+
+        no history
+
+    L = 2
+
+        valence
+        arousal
+
+    L = 5
+
+        stress
+        workload
+        fatigue
+        valence
+        arousal
+
+Output
+------
+
+enc_out
+
+    (B,T,d_model)
+
+dec_out
+
+    (B,S,d_model)
+
+where
+
+    S = forecasting horizon
 """
+
+from __future__ import annotations
+
+import math
 
 import torch
 import torch.nn as nn
-import math
 
 
 # ============================================================
-#  Positional Encoding (Sinusoidal)
+# Positional Encoding
 # ============================================================
 
-class PositionalEncoding(nn.Module):
+class PositionalEncoding(
+    nn.Module,
+):
     """
     Standard sinusoidal positional encoding.
-
-    Adds position-dependent sin/cos vectors to input embeddings.
     """
 
-    def __init__(self, d_model: int, max_len: int = 5000):
+    def __init__(
+        self,
+        d_model: int,
+        max_len: int = 5000,
+    ):
         super().__init__()
 
-        pe = torch.zeros(max_len, d_model)
-        position = torch.arange(0, max_len).unsqueeze(1)
-
-        div_term = torch.exp(
-            torch.arange(0, d_model, 2) * (-math.log(10000.0) / d_model)
+        pe = torch.zeros(
+            max_len,
+            d_model,
         )
 
-        pe[:, 0::2] = torch.sin(position * div_term)
-        pe[:, 1::2] = torch.cos(position * div_term)
+        position = torch.arange(
+            0,
+            max_len,
+            dtype=torch.float32,
+        ).unsqueeze(1)
 
-        self.pe = pe.unsqueeze(0)  # (1, max_len, d_model)
+        div_term = torch.exp(
+            torch.arange(
+                0,
+                d_model,
+                2,
+                dtype=torch.float32,
+            )
+            *
+            (
+                -math.log(10000.0)
+                / d_model
+            )
+        )
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """
-        Parameters
-        ----------
-        x : (B, T, d_model)
+        pe[:, 0::2] = torch.sin(
+            position * div_term
+        )
 
-        Returns
-        -------
-        (B, T, d_model)
-        """
-        T = x.size(1)
-        return x + self.pe[:, :T, :].to(x.device)
+        pe[:, 1::2] = torch.cos(
+            position * div_term
+        )
+
+        self.register_buffer(
+            "pe",
+            pe.unsqueeze(0),
+            persistent=False,
+        )
+
+    def forward(
+        self,
+        x: torch.Tensor,
+    ) -> torch.Tensor:
+
+        seq_len = x.size(1)
+
+        return (
+            x
+            +
+            self.pe[:, :seq_len]
+        )
 
 
 # ============================================================
-#  Transformer Encoder–Decoder
+# Transformer Encoder Decoder
 # ============================================================
 
-class TransformerEncoderDecoder(nn.Module):
+class TransformerEncoderDecoder(
+    nn.Module,
+):
     """
-    Transformer Encoder–Decoder for temporal modeling with VA history.
+    Unified temporal backbone.
 
-    This module is used identically across:
-        • Baseline B1/B2/B3
-        • QSAL
+    Input
 
-    It receives fused multimodal features and aligned VA history,
-    and produces:
-        • frame-level recognition outputs
-        • future forecasting outputs
+        fused
+
+            (B,T,256)
+
+        optional label_history
+
+            (B,T,L)
+
+    Output
+
+        enc_out
+
+            (B,T,256)
+
+        dec_out
+
+            (B,S,256)
     """
 
     def __init__(
@@ -109,111 +217,253 @@ class TransformerEncoderDecoder(nn.Module):
         dim_feedforward: int = 512,
         dropout: float = 0.1,
         forecast_horizon: int = 10,
+        history_dim: int = 0,
+        max_seq_len: int = 5000,
     ):
         super().__init__()
 
         self.d_model = d_model
+        self.history_dim = history_dim
         self.forecast_horizon = forecast_horizon
 
-        # ------------------------------------------------------------
-        # 1. Input projection: concat(fused, VA) → d_model
-        # ------------------------------------------------------------
-        self.input_proj = nn.Linear(d_model + 2, d_model)
+        # ----------------------------------
+        # History Integration
+        # ----------------------------------
 
-        # ------------------------------------------------------------
-        # 2. Positional encoding
-        # ------------------------------------------------------------
-        self.pos_enc = PositionalEncoding(d_model)
+        if history_dim > 0:
 
-        # ------------------------------------------------------------
-        # 3. Transformer Encoder
-        # ------------------------------------------------------------
-        encoder_layer = nn.TransformerEncoderLayer(
-            d_model=d_model,
-            nhead=nhead,
-            dim_feedforward=dim_feedforward,
-            dropout=dropout,
-            batch_first=True,
-        )
-        self.encoder = nn.TransformerEncoder(
-            encoder_layer,
-            num_layers=num_encoder_layers,
-        )
+            self.history_projection = (
+                nn.Linear(
+                    d_model + history_dim,
+                    d_model,
+                )
+            )
 
-        # ------------------------------------------------------------
-        # 4. Transformer Decoder
-        # ------------------------------------------------------------
-        decoder_layer = nn.TransformerDecoderLayer(
-            d_model=d_model,
-            nhead=nhead,
-            dim_feedforward=dim_feedforward,
-            dropout=dropout,
-            batch_first=True,
-        )
-        self.decoder = nn.TransformerDecoder(
-            decoder_layer,
-            num_layers=num_decoder_layers,
+        else:
+
+            self.history_projection = (
+                nn.Identity()
+            )
+
+        # ----------------------------------
+        # Positional Encoding
+        # ----------------------------------
+
+        self.positional_encoding = (
+            PositionalEncoding(
+                d_model=d_model,
+                max_len=max_seq_len,
+            )
         )
 
-        # ------------------------------------------------------------
-        # 5. Learned forecasting queries (S, d_model)
-        # ------------------------------------------------------------
-        self.query_tokens = nn.Parameter(
-            torch.randn(forecast_horizon, d_model)
+        # ----------------------------------
+        # Encoder
+        # ----------------------------------
+
+        encoder_layer = (
+            nn.TransformerEncoderLayer(
+                d_model=d_model,
+                nhead=nhead,
+                dim_feedforward=dim_feedforward,
+                dropout=dropout,
+                batch_first=True,
+            )
         )
 
-    # -------------------------------------------------------------
-    # Forward Pass
-    # -------------------------------------------------------------
-    def forward(self, fused: torch.Tensor, va_hist: torch.Tensor):
+        self.encoder = (
+            nn.TransformerEncoder(
+                encoder_layer,
+                num_layers=num_encoder_layers,
+            )
+        )
+
+        # ----------------------------------
+        # Decoder
+        # ----------------------------------
+
+        decoder_layer = (
+            nn.TransformerDecoderLayer(
+                d_model=d_model,
+                nhead=nhead,
+                dim_feedforward=dim_feedforward,
+                dropout=dropout,
+                batch_first=True,
+            )
+        )
+
+        self.decoder = (
+            nn.TransformerDecoder(
+                decoder_layer,
+                num_layers=num_decoder_layers,
+            )
+        )
+
+        # ----------------------------------
+        # Forecast Queries
+        # ----------------------------------
+
+        self.query_tokens = (
+            nn.Parameter(
+                torch.randn(
+                    forecast_horizon,
+                    d_model,
+                )
+            )
+        )
+
+    # --------------------------------------------------------
+    # History Integration
+    # --------------------------------------------------------
+
+    def _integrate_history(
+        self,
+        fused: torch.Tensor,
+        label_history: torch.Tensor | None,
+    ) -> torch.Tensor:
+
+        if self.history_dim == 0:
+            return fused
+
+        if label_history is None:
+
+            raise ValueError(
+                "history_dim > 0 but "
+                "label_history was not provided."
+            )
+
+        x = torch.cat(
+            [
+                fused,
+                label_history,
+            ],
+            dim=-1,
+        )
+
+        return self.history_projection(
+            x
+        )
+
+    # --------------------------------------------------------
+    # Forward
+    # --------------------------------------------------------
+
+    def forward(
+        self,
+        fused: torch.Tensor,
+        label_history: torch.Tensor | None = None,
+    ):
         """
         Parameters
         ----------
-        fused   : (B, T, d_model)
-            Fused multimodal features.
+        fused
 
-        va_hist : (B, T, 2)
-            Aligned valence–arousal history.
+            (B,T,d_model)
+
+        label_history
+
+            Optional
+
+            (B,T,L)
 
         Returns
         -------
-        enc_out : (B, T, d_model)
-        dec_out : (B, S, d_model)
+        enc_out
+
+            (B,T,d_model)
+
+        dec_out
+
+            (B,S,d_model)
         """
 
-        B, T, _ = fused.shape
+        B, T, D = fused.shape
 
-        # ------------------------------------------------------------
-        # 1. Concatenate fused features with VA history → (B, T, d_model+2)
-        # ------------------------------------------------------------
-        x = torch.cat([fused, va_hist], dim=-1)
+        if D != self.d_model:
 
-        # ------------------------------------------------------------
-        # 2. Project back to d_model → (B, T, d_model)
-        # ------------------------------------------------------------
-        x = self.input_proj(x)
+            raise ValueError(
+                f"Expected d_model="
+                f"{self.d_model}, "
+                f"received {D}."
+            )
 
-        # ------------------------------------------------------------
-        # 3. Add positional encoding
-        # ------------------------------------------------------------
-        x = self.pos_enc(x)
+        # ----------------------------------
+        # History Integration
+        # ----------------------------------
 
-        # ------------------------------------------------------------
-        # 4. Encoder
-        # ------------------------------------------------------------
-        enc_out = self.encoder(x)  # (B, T, d_model)
+        x = self._integrate_history(
+            fused,
+            label_history,
+        )
 
-        # ------------------------------------------------------------
-        # 5. Prepare decoder queries: (B, S, d_model)
-        # ------------------------------------------------------------
-        queries = self.query_tokens.unsqueeze(0).repeat(B, 1, 1)
+        # ----------------------------------
+        # Positional Encoding
+        # ----------------------------------
 
-        # ------------------------------------------------------------
-        # 6. Decoder
-        # ------------------------------------------------------------
+        x = self.positional_encoding(
+            x
+        )
+
+        # ----------------------------------
+        # Encoder
+        # ----------------------------------
+
+        enc_out = self.encoder(
+            x
+        )
+
+        # ----------------------------------
+        # Decoder Queries
+        # ----------------------------------
+
+        queries = (
+            self.query_tokens
+            .unsqueeze(0)
+            .expand(
+                B,
+                -1,
+                -1,
+            )
+        )
+
+        # ----------------------------------
+        # Decoder
+        # ----------------------------------
+
         dec_out = self.decoder(
             tgt=queries,
             memory=enc_out,
-        )  # (B, S, d_model)
+        )
 
         return enc_out, dec_out
+
+    # --------------------------------------------------------
+    # Metadata
+    # --------------------------------------------------------
+
+    def summary(
+        self,
+    ) -> dict:
+
+        return {
+            "d_model":
+                self.d_model,
+
+            "history_dim":
+                self.history_dim,
+
+            "forecast_horizon":
+                self.forecast_horizon,
+
+            "architecture":
+                "transformer_encoder_decoder",
+        }
+
+    def extra_repr(
+        self,
+    ) -> str:
+
+        return (
+            f"d_model={self.d_model}, "
+            f"history_dim={self.history_dim}, "
+            f"forecast_horizon={self.forecast_horizon}"
+        )

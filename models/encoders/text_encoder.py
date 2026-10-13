@@ -1,191 +1,185 @@
-# models/encoders/text_encoder.py
 """
-TextEncoder
------------
+models.encoders.text_encoder
+============================
 
-Unified text encoder supporting BOTH:
+Text Encoder
 
-    • REAL mode (SEWA)
-        - Input: List[str]
-        - Tokenizer → DistilBERT → pooled embedding → (B, 128)
-        - Replicated across T → (B, T, 128)
+Purpose
+-------
 
-    • REAL mode (RECOLA)
-        - Input: None
-        - Output: zeros (B, T, 128)
+Transforms synchronized text-derived features
+into latent temporal embeddings.
 
-    • SYNTHETIC mode (QSAL debugging)
-        - Input: Tensor(B, T, D_text) or List[Tensor]
-        - Output: random embeddings (B, T, 128)
+The encoder is intentionally:
 
-This encoder is fully aligned with the unified modality contract:
+    • Dataset Agnostic
+    • Label Agnostic
+    • Task Agnostic
 
-    raw text → tokenizer → DistilBERT → embeddings → fusion → transformer
+Input
+-----
 
-It is compatible with:
-    - Baseline B1/B2/B3
-    - QSAL
-    - MultimodalFeatureExtractors
-    - UnifiedMultimodalDataset (real + synthetic)
+Text Features
+
+    (B,T,C)
+
+Current ULM-TSST Channels
+-------------------------
+
+Channel 0
+
+    Text Valence
+
+Channel 1
+
+    Text Stress
+
+Future Extensions
+-----------------
+
+The architecture supports future channels without
+changing any downstream component.
+
+Examples
+
+    Sentiment Features
+
+    Emotion Features
+
+    Stress Markers
+
+    LIWC Features
+
+    OpenSMILE Linguistic Features
+
+    BERT Embeddings
+
+    RoBERTa Embeddings
+
+    LLM Features
+
+Output
+------
+
+Text Embedding
+
+    (B,T,D)
+
+Default
+
+    D = 128
+
+Design Goals
+------------
+
+✓ Dataset Agnostic
+
+✓ Label Agnostic
+
+✓ Continuous Labels
+
+✓ Discrete Labels
+
+✓ Recognition Compatible
+
+✓ Forecasting Compatible
+
+✓ Modality Agnostic
+
+✓ Future Proof
+
+Supported Datasets
+------------------
+
+RECOLA
+
+SEWA
+
+ULM-TSST
+
+Future Multimodal Datasets
+
+Notes
+-----
+
+The encoder operates on synchronized temporal
+text features.
+
+The encoder does NOT depend on:
+
+    labels
+
+    dataset names
+
+    forecasting tasks
+
+    classification tasks
+
+    continuous targets
+
+    discrete targets
+
+Its only responsibility is:
+
+    Text Features
+        ↓
+    Representation
 """
 
-import torch
-import torch.nn as nn
+from __future__ import annotations
 
-try:
-    from transformers import DistilBertModel, DistilBertTokenizerFast
-    _HF_AVAILABLE = True
-except ImportError:
-    _HF_AVAILABLE = False
+from .temporal_conv_encoder import (
+    TemporalConvEncoder,
+)
 
 
-class TextEncoder(nn.Module):
+class TextEncoder(
+    TemporalConvEncoder,
+):
     """
-    DistilBERT-based text encoder producing (B, T, 128) embeddings.
+    Text temporal encoder.
 
-    Parameters
-    ----------
-    model_name : str
-        HuggingFace model identifier.
-    emb_dim : int
-        Output embedding dimension (128).
-    synthetic : bool
-        If True → synthetic mode (QSAL debugging).
-        If False → real mode (SEWA raw text).
-    target_seq_len : int
-        Temporal length T for alignment.
+    Input
+    -----
+
+        (B,T,C)
+
+    Output
+    ------
+
+        (B,T,D)
+
+    Current Default
+
+        C = 2
+        D = 128
     """
 
     def __init__(
         self,
-        model_name: str = "distilbert-base-uncased",
-        emb_dim: int = 128,
-        synthetic: bool = True,
-        target_seq_len: int = 50,
+        embedding_dim: int = 128,
+        hidden_dim: int = 64,
+        num_layers: int = 3,
+        kernel_size: int = 5,
+        dropout: float = 0.1,
+        input_channels: int = 2,
     ):
-        super().__init__()
-
-        self.synthetic = synthetic
-        self.emb_dim = emb_dim
-        self.target_seq_len = target_seq_len
-
-        # ---------------------------------------------------------
-        # SYNTHETIC MODE: no tokenizer, no backbone
-        # ---------------------------------------------------------
-        if synthetic:
-            self.tokenizer = None
-            self.backbone = None
-            self.proj = None
-            return
-
-        # ---------------------------------------------------------
-        # REAL MODE: load DistilBERT
-        # ---------------------------------------------------------
-        assert _HF_AVAILABLE, "Install transformers to use DistilBERT."
-
-        self.tokenizer = DistilBertTokenizerFast.from_pretrained(model_name)
-        self.backbone = DistilBertModel.from_pretrained(model_name)
-
-        hidden_size = self.backbone.config.dim  # 768
-        self.proj = nn.Linear(hidden_size, emb_dim)
-
-    # -------------------------------------------------------------
-    # FORWARD PASS
-    # -------------------------------------------------------------
-    def forward(self, text):
-        """
-        Parameters
-        ----------
-        text : List[str] | None | Tensor | List[Tensor]
-            REAL mode:
-                - SEWA: List[str]
-                - RECOLA: None
-            SYNTHETIC mode:
-                - Tensor(B, T, D_text)
-                - List[Tensor(T, D_text)]
-
-        Returns
-        -------
-        Tensor
-            Text embeddings of shape (B, T, 128)
-        """
-
-        # =========================================================
-        # SYNTHETIC MODE
-        # =========================================================
-        if self.synthetic:
-            # text may be Tensor(B, T, D) or List[Tensor]
-            if isinstance(text, torch.Tensor):
-                B = text.size(0)
-                device = text.device
-            elif isinstance(text, (list, tuple)):
-                B = len(text)
-                device = torch.device("cpu")
-            else:
-                B = 1
-                device = torch.device("cpu")
-
-            # Synthetic embeddings
-            return torch.randn(B, self.target_seq_len, self.emb_dim, device=device)
-
-        # =========================================================
-        # REAL MODE — RECOLA (no text)
-        # =========================================================
-        if text is None or (isinstance(text, list) and text[0] is None):
-            # RECOLA → no text modality
-            B = len(text) if isinstance(text, list) else 1
-            return torch.zeros(B, self.target_seq_len, self.emb_dim)
-
-        # =========================================================
-        # REAL MODE — SEWA (raw text strings)
-        # =========================================================
-        if isinstance(text, list) and isinstance(text[0], str):
-            # Tokenize raw strings
-            encoded = self.tokenizer(
-                text,
-                padding=True,
-                truncation=True,
-                return_tensors="pt"
-            )
-
-            # Move to same device as backbone
-            encoded = {k: v.to(next(self.backbone.parameters()).device)
-                       for k, v in encoded.items()}
-
-            # DistilBERT forward
-            outputs = self.backbone(**encoded)
-            hidden_states = outputs.last_hidden_state  # (B, L_tokens, 768)
-
-            # Mean pooling across tokens
-            pooled = hidden_states.mean(dim=1)  # (B, 768)
-
-            # Project to 128
-            emb = self.proj(pooled)  # (B, 128)
-
-            # Replicate across T
-            emb = emb.unsqueeze(1).repeat(1, self.target_seq_len, 1)  # (B, T, 128)
-
-            return emb
-
-        # =========================================================
-        # REAL MODE — tokenized input (Dict[str, Tensor])
-        # =========================================================
-        if isinstance(text, dict):
-            encoded = {k: v.to(next(self.backbone.parameters()).device)
-                       for k, v in text.items()}
-
-            outputs = self.backbone(**encoded)
-            hidden_states = outputs.last_hidden_state
-
-            pooled = hidden_states.mean(dim=1)
-            emb = self.proj(pooled)
-            emb = emb.unsqueeze(1).repeat(1, self.target_seq_len, 1)
-
-            return emb
-
-        # =========================================================
-        # FALLBACK — unexpected type
-        # =========================================================
-        raise ValueError(
-            f"TextEncoder received unsupported input type: {type(text)}"
+        super().__init__(
+            input_channels=input_channels,
+            embedding_dim=embedding_dim,
+            hidden_dim=hidden_dim,
+            num_layers=num_layers,
+            kernel_size=kernel_size,
+            dropout=dropout,
+            modality_name="text",
         )
+
+    @property
+    def modality(
+        self,
+    ) -> str:
+        """
+        Modality identifier.
+        """
+
+        return "text"

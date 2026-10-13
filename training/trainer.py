@@ -1,239 +1,636 @@
 """
-Universal Trainer for:
-    - Baseline B1 (Classical Fusion)
-    - QSAL (Quantum Self-Attention Layer)
-    - Hybrid Models
+training.trainer
+================
 
-Features:
-    - tqdm progress bars
-    - per-batch timing
-    - per-epoch timing
-    - early stopping
-    - checkpoint saving
+Unified Trainer
 
-Supported model output formats:
-    1) Baseline B1 (dict):
-        {
-            "va_pred":      (B, T_align, 2),
-            "va_future":    (B, S, 2),
-            "va_hist":      (B, T_align, 2),
-            "va_future_gt": (B, S, 2),
-        }
+Supports
 
-    2) QSAL (tuple):
-        (rec_pred_seq, for_pred)
+    • Recognition
+
+    • Forecasting
+
+Across
+
+    • Continuous Targets
+
+    • Discrete Targets
+
+Compatible With
+
+    • BaselineB1
+
+    • BaselineB2
+
+    • BaselineB3
+
+    • QSAL
+
+    • MultimodalQEmotionModel
+
+Design Goals
+------------
+
+✓ Dataset Agnostic
+
+✓ Modality Agnostic
+
+✓ Label Agnostic
+
+✓ Recognition Compatible
+
+✓ Forecasting Compatible
+
+✓ Continuous Labels
+
+✓ Discrete Labels
+
+✓ History Label Compatible
+
+✓ Scheduler Compatible
+
+✓ Early Stopping
+
+✓ Checkpointing
+
+✓ Future Proof
 """
 
+from __future__ import annotations
+
 import time
+
 import torch
-import torch.nn as nn
+
 from tqdm import tqdm
+
+from training.losses import (
+    UnifiedMultiTaskLoss,
+)
+
+from training.metrics import (
+    evaluate_outputs,
+)
+
+from training.scheduler import (
+    step_scheduler,
+)
 
 
 class Trainer:
+    """
+    Unified trainer.
+    """
+
     def __init__(
         self,
         model,
         optimizer,
+        scheduler=None,
         device="cpu",
-        patience=5,
+        patience=10,
         save_path=None,
         use_tqdm=True,
         log_batches=False,
+        alpha=0.2,
+        recognition_weight=1.0,
+        forecast_weight=1.0,
+        gradient_clip=1.0,
+        max_train_batches=None,
+        max_val_batches=None,
     ):
-        """
-        Parameters
-        ----------
-        model : nn.Module
-            BaselineB1, QSAL, or hybrid model.
-        optimizer : torch.optim.Optimizer
-            Optimizer instance.
-        device : str
-            "cpu", "cuda", or torch.device.
-        patience : int
-            Early stopping patience (epochs without improvement).
-        save_path : str or None
-            Where to save best model state_dict.
-        use_tqdm : bool
-            Whether to show tqdm progress bars.
-        log_batches : bool
-            Whether to log per-batch stats in tqdm.
-        """
+
         self.model = model.to(device)
+
         self.optimizer = optimizer
+
+        self.scheduler = scheduler
+
         self.device = device
+
         self.patience = patience
+
         self.save_path = save_path
+
         self.use_tqdm = use_tqdm
+
         self.log_batches = log_batches
 
-        self.criterion = nn.MSELoss()
+        self.gradient_clip = gradient_clip
+
+        self.max_train_batches = max_train_batches
+
+        self.max_val_batches = max_val_batches
+
+        self.loss_fn = UnifiedMultiTaskLoss(
+            alpha=alpha,
+            recognition_weight=recognition_weight,
+            forecast_weight=forecast_weight,
+        )
 
         self.best_val_loss = float("inf")
-        self.wait = 0  # early stopping counter
 
-    # ---------------------------------------------------------
-    # TRAIN ONE EPOCH
-    # ---------------------------------------------------------
-    def train_one_epoch(self, train_loader, epoch, total_epochs):
-        """
-        Train for a single epoch.
+        self.wait = 0
 
-        Returns
-        -------
-        dict
-            {
-                "loss": float,
-                "rec_loss": float,
-                "fore_loss": float,
+    # ======================================================
+    # Recursive Device Transfer
+    # ======================================================
+
+    def _to_device(
+        self,
+        obj,
+    ):
+
+        if torch.is_tensor(obj):
+
+            return obj.to(
+                self.device
+            )
+
+        if isinstance(
+            obj,
+            dict,
+        ):
+
+            return {
+
+                k: self._to_device(v)
+
+                for k, v in obj.items()
             }
-        """
+
+        if isinstance(
+            obj,
+            list,
+        ):
+
+            return [
+                self._to_device(v)
+                for v in obj
+            ]
+
+        return obj
+
+    # ======================================================
+    # Train Epoch
+    # ======================================================
+
+    def train_one_epoch(
+        self,
+        train_loader,
+        epoch,
+        total_epochs,
+    ):
+
         self.model.train()
 
         total_loss = 0.0
+
         total_rec = 0.0
+
         total_fore = 0.0
-        batches = 0
+
+        num_batches = 0
 
         iterator = train_loader
-        if self.use_tqdm:
-            iterator = tqdm(train_loader, desc=f"Epoch {epoch}/{total_epochs} | Train")
 
-        for batch in iterator:
+        if self.use_tqdm:
+
+            iterator = tqdm(
+                train_loader,
+                desc=
+                f"Epoch {epoch}/{total_epochs} | Train",
+            )
+
+        for batch_idx, batch in enumerate(
+            iterator
+        ):
+
+            if (
+                self.max_train_batches
+                is not None
+                and
+                batch_idx >=
+                self.max_train_batches
+            ):
+                break
+
             batch_start = time.time()
 
-            # Move tensors to device
-            batch = {
-                k: (v.to(self.device) if torch.is_tensor(v) else v)
-                for k, v in batch.items()
-            }
+            batch = self._to_device(
+                batch
+            )
 
             self.optimizer.zero_grad()
 
-            # Forward pass
-            outputs = self.model(batch)
+            outputs = self.model(
+                batch
+            )
 
-            # ---------------------------------------------
-            # SUPPORT BOTH MODEL OUTPUT FORMATS
-            # ---------------------------------------------
-            if isinstance(outputs, dict):
-                # Baseline B1 format
-                va_pred = outputs["va_pred"]          # (B, T_align, 2)
-                va_future_pred = outputs["va_future"] # (B, S, 2)
-                va_hist = outputs["va_hist"]          # (B, T_align, 2)
-                va_future_gt = outputs["va_future_gt"]# (B, S, 2)
-            else:
-                # QSAL format: (rec_pred_seq, for_pred)
-                rec_pred_seq, va_future_pred = outputs
-                va_pred = rec_pred_seq
-                # For QSAL, we assume batch provides aligned targets:
-                va_hist = batch["va_hist"]
-                va_future_gt = batch["va_future"]
+            losses = self.loss_fn(
 
-            # Recognition loss (history)
-            rec_loss = self.criterion(va_pred, va_hist)
+                outputs=outputs,
 
-            # Forecasting loss (future)
-            fore_loss = self.criterion(va_future_pred, va_future_gt)
+                recognition_targets=
+                batch[
+                    "recognition_targets"
+                ],
 
-            loss = rec_loss + fore_loss
+                forecast_targets=
+                batch[
+                    "forecast_targets"
+                ],
+            )
 
-            # Backprop
+            loss = losses[
+                "total_loss"
+            ]
+
+            # # ==================================================
+            # # DEBUG
+            # # ==================================================
+
+            # print("\n")
+            # print("=" * 60)
+            # print("TRAINING DEBUG")
+            # print("=" * 60)
+
+            # print(
+            #     "loss =",
+            #     loss
+            # )
+
+            # print(
+            #     "loss.requires_grad =",
+            #     loss.requires_grad
+            # )
+
+            # print(
+            #     "loss.grad_fn =",
+            #     loss.grad_fn
+            # )
+
+            # print()
+
+            # print(
+            #     "recognition outputs:"
+            # )
+
+            # print(
+            #     outputs[
+            #         "recognition"
+            #     ][
+            #         "continuous"
+            #     ].keys()
+            # )
+
+            # print()
+
+            # print(
+            #     "recognition targets:"
+            # )
+
+            # print(
+            #     batch[
+            #         "recognition_targets"
+            #     ][
+            #         "continuous"
+            #     ].keys()
+            # )
+
+            # print()
+
+            # print(
+            #     "forecast outputs:"
+            # )
+
+            # print(
+            #     outputs[
+            #         "forecasting"
+            #     ][
+            #         "continuous"
+            #     ].keys()
+            # )
+
+            # print()
+
+            # print(
+            #     "forecast targets:"
+            # )
+
+            # print(
+            #     batch[
+            #         "forecast_targets"
+            #     ][
+            #         "continuous"
+            #     ].keys()
+            # )
+
+            # print("=" * 60)
+            # print()
+
             loss.backward()
-            torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
+
+            if (
+                self.gradient_clip
+                is not None
+            ):
+
+                torch.nn.utils.clip_grad_norm_(
+                    self.model.parameters(),
+                    self.gradient_clip,
+                )
+
             self.optimizer.step()
 
-            total_loss += loss.item()
-            total_rec += rec_loss.item()
-            total_fore += fore_loss.item()
-            batches += 1
+            total_loss += float(
+                loss.item()
+            )
 
-            if self.log_batches and self.use_tqdm:
+            total_rec += float(
+                losses[
+                    "recognition_loss"
+                ].item()
+            )
+
+            total_fore += float(
+                losses[
+                    "forecasting_loss"
+                ].item()
+            )
+
+            num_batches += 1
+
+            if (
+                self.use_tqdm
+                and
+                self.log_batches
+            ):
+
                 iterator.set_postfix({
-                    "loss": f"{loss.item():.4f}",
-                    "batch_time": f"{time.time() - batch_start:.3f}s"
+
+                    "loss":
+                        f"{loss.item():.4f}",
+
+                    "time":
+                        f"{time.time()-batch_start:.2f}s",
                 })
 
+        num_batches = max(
+            num_batches,
+            1,
+        )
         return {
-            "loss": total_loss / batches,
-            "rec_loss": total_rec / batches,
-            "fore_loss": total_fore / batches,
+
+            "loss":
+                total_loss / num_batches,
+
+            "recognition_loss":
+                total_rec / num_batches,
+
+            "forecasting_loss":
+                total_fore / num_batches,
         }
 
-    # ---------------------------------------------------------
-    # VALIDATION
-    # ---------------------------------------------------------
+    # ======================================================
+    # Validation
+    # ======================================================
+
     @torch.no_grad()
-    def eval_one_epoch(self, val_loader, epoch, total_epochs):
-        """
-        Evaluate for a single epoch.
+    def eval_one_epoch(
+        self,
+        val_loader,
+        epoch,
+        total_epochs,
+    ):
 
-        Also handles early stopping and checkpoint saving.
-
-        Returns
-        -------
-        dict
-            {
-                "loss": float,
-                "rec_loss": float,
-                "fore_loss": float,
-            }
-        """
         self.model.eval()
 
         total_loss = 0.0
+
         total_rec = 0.0
+
         total_fore = 0.0
-        batches = 0
+
+        num_batches = 0
+
+        collected_metrics = []
 
         iterator = val_loader
+
         if self.use_tqdm:
-            iterator = tqdm(val_loader, desc=f"Epoch {epoch}/{total_epochs} | Val")
 
-        for batch in iterator:
-            # Move tensors to device
-            batch = {
-                k: (v.to(self.device) if torch.is_tensor(v) else v)
-                for k, v in batch.items()
-            }
+            iterator = tqdm(
+                val_loader,
+                desc=
+                f"Epoch {epoch}/{total_epochs} | Val",
+            )
 
-            # Forward pass
-            outputs = self.model(batch)
+        for batch_idx, batch in enumerate(
+            iterator
+        ):
 
-            if isinstance(outputs, dict):
-                va_pred = outputs["va_pred"]
-                va_future_pred = outputs["va_future"]
-                va_hist = outputs["va_hist"]
-                va_future_gt = outputs["va_future_gt"]
-            else:
-                rec_pred_seq, va_future_pred = outputs
-                va_pred = rec_pred_seq
-                va_hist = batch["va_hist"]
-                va_future_gt = batch["va_future"]
+            if (
+                self.max_val_batches
+                is not None
+                and
+                batch_idx >=
+                self.max_val_batches
+            ):
+                break
 
-            rec_loss = self.criterion(va_pred, va_hist)
-            fore_loss = self.criterion(va_future_pred, va_future_gt)
-            loss = rec_loss + fore_loss
+            batch = self._to_device(
+                batch
+            )
 
-            total_loss += loss.item()
-            total_rec += rec_loss.item()
-            total_fore += fore_loss.item()
-            batches += 1
+            outputs = self.model(
+                batch
+            )
 
-        avg_loss = total_loss / batches
+            losses = self.loss_fn(
 
-        # EARLY STOPPING + CHECKPOINT
+                outputs=outputs,
+
+                recognition_targets=
+                batch[
+                    "recognition_targets"
+                ],
+
+                forecast_targets=
+                batch[
+                    "forecast_targets"
+                ],
+            )
+
+            metrics = evaluate_outputs(
+
+                outputs=outputs,
+
+                recognition_targets=
+                batch[
+                    "recognition_targets"
+                ],
+
+                forecast_targets=
+                batch[
+                    "forecast_targets"
+                ],
+            )
+
+            collected_metrics.append(
+                metrics
+            )
+
+            total_loss += float(
+                losses[
+                    "total_loss"
+                ].item()
+            )
+
+            total_rec += float(
+                losses[
+                    "recognition_loss"
+                ].item()
+            )
+
+            total_fore += float(
+                losses[
+                    "forecasting_loss"
+                ].item()
+            )
+
+            num_batches += 1
+
+        avg_loss = (
+            total_loss
+            /
+            num_batches
+        )
+
+        step_scheduler(
+            self.scheduler,
+            validation_loss=avg_loss,
+        )
+
+        # -----------------------------------
+        # Early Stopping
+        # -----------------------------------
+
         if avg_loss < self.best_val_loss:
+
             self.best_val_loss = avg_loss
+
             self.wait = 0
 
             if self.save_path is not None:
-                torch.save(self.model.state_dict(), self.save_path)
+
+                torch.save(
+                    self.model.state_dict(),
+                    self.save_path,
+                )
+
         else:
+
             self.wait += 1
 
+
+        num_batches = max(
+            num_batches,
+            1,
+        )
+        
         return {
-            "loss": avg_loss,
-            "rec_loss": total_rec / batches,
-            "fore_loss": total_fore / batches,
+
+            "loss":
+                avg_loss,
+
+            "recognition_loss":
+                total_rec / num_batches,
+
+            "forecasting_loss":
+                total_fore / num_batches,
+
+            "metrics":
+                collected_metrics,
         }
+
+    # ======================================================
+    # Early Stop Flag
+    # ======================================================
+
+    @property
+    def should_stop(
+        self,
+    ) -> bool:
+
+        return (
+            self.wait
+            >=
+            self.patience
+        )
+
+    # ======================================================
+    # Full Fit
+    # ======================================================
+
+    def fit(
+        self,
+        train_loader,
+        val_loader,
+        epochs,
+    ):
+
+        history = []
+
+        for epoch in range(
+            1,
+            epochs + 1,
+        ):
+
+            train_stats = (
+                self.train_one_epoch(
+                    train_loader,
+                    epoch,
+                    epochs,
+                )
+            )
+
+            val_stats = (
+                self.eval_one_epoch(
+                    val_loader,
+                    epoch,
+                    epochs,
+                )
+            )
+
+            history.append({
+
+                "epoch":
+                    epoch,
+
+                "train":
+                    train_stats,
+
+                "val":
+                    val_stats,
+            })
+
+            print(
+
+                f"[Epoch {epoch}] "
+
+                f"Train={train_stats['loss']:.4f} "
+
+                f"Val={val_stats['loss']:.4f}"
+
+            )
+
+            if self.should_stop:
+
+                print(
+                    "Early stopping triggered."
+                )
+
+                break
+
+        return history

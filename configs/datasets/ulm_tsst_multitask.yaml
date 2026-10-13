@@ -1,0 +1,80 @@
+dataset:
+
+  name: "ulm_tsst"
+
+  version: "multitask_v1"
+
+  description: >
+    Multitask recognition and forecasting dataset
+    using all modalities and all labels.
+
+reproducibility:
+
+  seed: 42
+
+samples:
+
+  num_samples: 2000
+
+recording:
+
+  duration_seconds: 300
+
+labels:
+
+  label_sampling_rate: 25
+
+modalities:
+
+  ecg: true
+  eda: true
+  eeg: true
+  emg: true
+  resp: true
+  bpm: true
+  eye: true
+  audio: true
+  video: true
+  text: true
+
+sampling_rates:
+
+  ecg: 1000
+  eda: 128
+  eeg: 256
+  emg: 1000
+  resp: 64
+  bpm: 4
+  eye: 120
+  audio: 100
+  video: 25
+  text: 5
+
+continuous_labels:
+
+  valence: true
+  arousal: true
+  dominance: true
+  stress: true
+  workload: true
+  fatigue: true
+
+discrete_labels:
+
+  emotion_class: true
+  stress_class: true
+  workload_class: true
+  drowsiness_class: true
+  alertness_class: true
+
+history:
+
+  enabled: true
+
+  history_length: 50
+
+forecasting:
+
+  enabled: true
+
+  horizon: 25

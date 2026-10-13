@@ -1,61 +1,289 @@
-# ============================================================
-# Baseline B3 — Unified Multimodal Entangled PQC Fusion
-# Fully aligned with updated BaselineB3 wrapper + PQC Fusion
-# ============================================================
+# ==========================================================
+# Baseline B3
+# Parameterized Quantum Circuit Fusion Baseline
+# ==========================================================
 
-dataset:
-  # Dataset name: "recola", "sewa"
-  name: "sewa"
+experiment:
 
-  # Temporal sequence length T (RECOLA=300, SEWA≈50)
-  target_seq_len: 300
-
-  # Forecasting horizon S (future steps)
-  forecast_horizon: 50
-
-  # Synthetic mode disabled for Baseline B3
-  synthetic: false
-
-model:
   name: "baseline_b3"
 
-  # Per‑modality embedding dimension (from feature extractors)
+  description: >
+    Parameterized quantum circuit fusion baseline
+    for multimodal affective computing,
+    recognition, and forecasting.
+
+
+# ==========================================================
+# Dataset
+# ==========================================================
+
+dataset:
+
+  name: "ulm_tsst_v1"
+
+  type: "disk"
+
+  config_path: "configs/datasets/ulm_tsst_v1.yaml"
+
+  root_dir: "data/generated/ulm_tsst_v1"
+
+  train_split: "train"
+
+  val_split: "val"
+
+  test_split: "test"
+
+
+# ==========================================================
+# Modalities
+# ==========================================================
+
+modalities:
+
+  audio: true
+
+  video: true
+
+  ecg: true
+
+  eda: true
+
+  eeg: true
+
+  emg: true
+
+  resp: true
+
+  bpm: true
+
+  eye: true
+
+  text: true
+
+
+# ==========================================================
+# Continuous Labels
+# ==========================================================
+
+continuous_labels:
+
+  - valence
+
+  - arousal
+
+  - dominance
+
+  - stress
+
+  - workload
+
+  - fatigue
+
+
+# ==========================================================
+# Discrete Labels
+# ==========================================================
+
+discrete_labels:
+
+  - emotion_class
+
+  - stress_class
+
+  - workload_class
+
+  - alertness_class
+
+  - drowsiness_class
+
+
+# ==========================================================
+# Recognition Task
+# ==========================================================
+
+recognition:
+
+  enabled: true
+
+
+# ==========================================================
+# Forecasting Task
+# ==========================================================
+
+forecasting:
+
+  enabled: true
+
+  horizon: 25
+
+
+# ==========================================================
+# History Configuration
+# ==========================================================
+
+history:
+
+  enabled: true
+
+  history_length: 50
+
+  use_continuous_history: true
+
+  use_discrete_history: true
+
+  source: "ground_truth"
+
+  future_inference_source: "prediction"
+
+
+# ==========================================================
+# Model
+# ==========================================================
+
+model:
+
+  name: "baseline_b3"
+
+  fusion_type: "pqc"
+
   emb_dim: 128
 
-  # Classical projection inside PQC fusion (128 → 16)
   proj_dim: 16
 
-  # Fused slot dimension (4 × 16 = 64)
   fused_dim: 64
 
-  # Transformer d_model (PQC output → transformer input)
   transformer_dim: 256
 
-  # Transformer hyperparameters
-  num_heads: 2
-  num_layers: 2
+  num_heads: 4
 
-  # Active modalities (REAL mode)
-  modalities:
-    audio: true
-    video: true
-    ecg: true
-    eda: true
-    text: true        # RECOLA has no text modality
+  num_layers: 4
 
-  # Unified PQC configuration
-  pqc:
-    num_qubits: 8      # choose: 4, 6, or 8
-    depth: 3           # PQC layers
+  dropout: 0.1
+
+
+# ==========================================================
+# PQC Fusion
+# ==========================================================
+
+pqc:
+
+  enabled: true
+
+  num_qubits: 4
+
+  depth: 3
+
+  shots: null
+
+  backend: "lightning.qubit"
+
+  encoding: "angle"
+
+  entanglement: "strong"
+
+# ==========================================================
+# Recognition Head
+# ==========================================================
+
+recognition_head:
+
+  enabled: true
+
+
+# ==========================================================
+# Forecast Head
+# ==========================================================
+
+forecast_head:
+
+  enabled: true
+
+
+# ==========================================================
+# Training
+# ==========================================================
 
 training:
-  batch_size: 4
-  epochs: 1
+
+  batch_size: 8
+
+  epochs: 3
+
+  patience: 10
+
+  gradient_clip: 1.0
+
+  max_train_batches: 10
+
+  max_val_batches: 2
+
+
+# ==========================================================
+# Optimizer
+# ==========================================================
+
+optimizer:
+
+  name: "adamw"
+
   lr: 0.0001
-  weight_decay: 0.0
+
+  weight_decay: 0.00001
+
+
+# ==========================================================
+# Scheduler
+# ==========================================================
+
+scheduler:
+
+  name: "reduce_on_plateau"
+
+  factor: 0.5
+
   patience: 3
-  device: "cpu"        # PQC uses lightning.qubit (CPU backend)
+
+  min_lr: 0.000001
+
+
+# ==========================================================
+# Loss
+# ==========================================================
+
+loss:
+
+  alpha: 0.2
+
+  recognition_weight: 1.0
+
+  forecast_weight: 1.0
+
+
+# ==========================================================
+# Runtime
+# ==========================================================
+
+runtime:
+
+  device: "auto"
+
+  deterministic: true
+
+  seed: 42
+
+
+# ==========================================================
+# Logging
+# ==========================================================
 
 logging:
-  checkpoint_dir: "runs/baseline_b3/"
+
+  run_dir: "runs/baseline_b3"
+
+  save_best_only: true
+
+  save_history: true
+
+  save_config: true
+
   log_interval: 20
