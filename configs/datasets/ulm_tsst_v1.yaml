@@ -139,6 +139,26 @@ discrete_labels:
 
   alertness_class: true
 
+
+# ========================================================== 
+# Discrete Label Cardinalities
+# ==========================================================
+
+
+discrete_cardinalities:
+
+  emotion_class: 6
+
+  stress_class: 3
+
+  workload_class: 3
+
+  alertness_class: 3
+
+  drowsiness_class: 4
+
+  kss_score: 9
+
 # ==========================================================
 # History Configuration
 # ==========================================================
