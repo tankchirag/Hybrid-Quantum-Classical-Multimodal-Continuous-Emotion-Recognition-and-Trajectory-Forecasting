@@ -113,10 +113,19 @@ class ULMTSSTDiskDataset(
             device
         )
 
-        self.split_dir = (
-            self.dataset_root
-            / split
-        )
+        if split == "raw":
+
+            self.split_dir = (
+                self.dataset_root
+                / "raw"
+            )
+
+        else:
+
+            self.split_dir = (
+                self.dataset_root
+                / split
+            )
 
         if not self.split_dir.exists():
 
@@ -272,6 +281,58 @@ class ULMTSSTDiskDataset(
             "split":
                 self.split,
         }
+
+        if (
+            "meta_clip_id"
+            in sample.files
+        ):
+
+            metadata[
+                "clip_id"
+            ] = int(
+                sample[
+                    "meta_clip_id"
+                ]
+            )
+
+        if (
+            "meta_subject_id"
+            in sample.files
+        ):
+
+            metadata[
+                "subject_id"
+            ] = int(
+                sample[
+                    "meta_subject_id"
+                ]
+            )
+
+        if (
+            "meta_session_id"
+            in sample.files
+        ):
+
+            metadata[
+                "session_id"
+            ] = int(
+                sample[
+                    "meta_session_id"
+                ]
+            )
+
+        if (
+            "meta_duration_seconds"
+            in sample.files
+        ):
+
+            metadata[
+                "duration_seconds"
+            ] = int(
+                sample[
+                    "meta_duration_seconds"
+                ]
+            )
 
         return {
 
