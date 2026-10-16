@@ -81,6 +81,7 @@ from __future__ import annotations
 from typing import Dict
 from typing import Optional
 
+import os
 import torch
 import torch.nn as nn
 
@@ -100,11 +101,16 @@ class HistoryRepresentation(
             Dict[str, int]
         ] = None,
         dropout: float = 0.1,
+        max_continuous_labels: int = 16,
     ):
         super().__init__()
 
         self.history_dim = (
             history_dim
+        )
+
+        self.max_continuous_labels = (
+            max_continuous_labels
         )
 
         self.discrete_cardinalities = (
@@ -117,11 +123,17 @@ class HistoryRepresentation(
         # ==================================
 
         self.continuous_projection = (
-            None
+            nn.Sequential(
+                nn.Linear(
+                    self.max_continuous_labels,
+                    history_dim,
+                ),
+                nn.LayerNorm(
+                    history_dim,
+                ),
+                nn.GELU(),
+            )
         )
-
-        # Lazy initialization because
-        # Nc depends on dataset.
 
         # ==================================
         # Discrete Branch
@@ -186,29 +198,30 @@ class HistoryRepresentation(
         continuous: torch.Tensor,
     ):
 
-        if (
-            self.continuous_projection
-            is None
-        ):
+        current_nc = continuous.shape[-1]
 
-            nc = continuous.shape[-1]
-
-            self.continuous_projection = (
-                nn.Sequential(
-
-                    nn.Linear(
-                        nc,
-                        self.history_dim,
-                    ),
-
-                    nn.LayerNorm(
-                        self.history_dim,
-                    ),
-
-                    nn.GELU(),
-                )
-            ).to(
-                continuous.device
+        if current_nc < self.max_continuous_labels:
+            pad_size = (
+                self.max_continuous_labels
+                - current_nc
+            )
+            pad = torch.zeros(
+                *continuous.shape[:-1],
+                pad_size,
+                device=continuous.device,
+                dtype=continuous.dtype,
+            )
+            continuous = torch.cat(
+                [continuous, pad],
+                dim=-1,
+            )
+        elif current_nc > self.max_continuous_labels:
+            raise ValueError(
+                "Continuous history has "
+                f"{current_nc} labels, but "
+                "HistoryRepresentation is configured "
+                f"for at most "
+                f"{self.max_continuous_labels}."
             )
 
         return (
@@ -356,6 +369,7 @@ class HistoryRepresentation(
             return self.merge(
                 combined
             )
+
 
         raise ValueError(
             "HistoryRepresentation "

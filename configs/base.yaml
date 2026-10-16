@@ -45,3 +45,5 @@ history_encoder:
   history_dropout: 0.20
 
   injection_point: "post_fusion"
+
+  max_continuous_labels: 16
