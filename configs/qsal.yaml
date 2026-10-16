@@ -149,11 +149,19 @@ history_encoder:
 
   type: "gru"
 
-  hidden_dim: 128
+  auto_scale: true
+
+  ratio: 4
+
+  hidden_dim: null
 
   num_layers: 2
 
   bidirectional: false
+
+  history_dropout: 0.20
+
+  injection_point: "post_fusion"
 
 
 # ==========================================================
