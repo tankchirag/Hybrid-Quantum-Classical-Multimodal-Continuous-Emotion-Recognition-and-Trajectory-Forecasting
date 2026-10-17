@@ -89,6 +89,22 @@ from models.heads.forecasting_head import (
     ForecastingHead,
 )
 
+from models.history.adapter import (
+    HistoryAdapter,
+)
+
+from models.history.representation import (
+    HistoryRepresentation,
+)
+
+from models.history.encoder import (
+    HistoryEncoder,
+)
+
+from models.history.injection import (
+    HistoryInjection,
+)
+
 
 class BaselineB2(nn.Module):
     """
@@ -152,18 +168,55 @@ class BaselineB2(nn.Module):
             config,
             "discrete_targets",
         ):
+
             self.discrete_targets = (
                 config.discrete_targets
             )
 
-        elif hasattr(
-            config,
-            "discrete_labels",
-        ):
+        else:
+
+            dataset_cfg = getattr(
+                config,
+                "dataset",
+                None,
+            )
+
             self.discrete_targets = {}
 
-        else:
-            self.discrete_targets = {}
+            if (
+                dataset_cfg is not None
+                and
+                hasattr(
+                    dataset_cfg,
+                    "discrete_cardinalities",
+                )
+            ):
+
+                discrete_cardinalities = (
+                    dataset_cfg
+                    .discrete_cardinalities
+                )
+
+                if isinstance(
+                    discrete_cardinalities,
+                    dict,
+                ):
+
+                    self.discrete_targets = (
+                        discrete_cardinalities
+                    )
+
+                elif hasattr(
+                    discrete_cardinalities,
+                    "__dict__",
+                ):
+
+                    self.discrete_targets = dict(
+                        vars(
+                            discrete_cardinalities
+                        )
+                    )
+
 
         # ==================================================
         # Model Parameters
@@ -222,7 +275,7 @@ class BaselineB2(nn.Module):
         )
 
         # ==================================================
-        # History
+        # History Configuration
         # ==================================================
 
         self.history_dim = getattr(
@@ -230,6 +283,194 @@ class BaselineB2(nn.Module):
             "history_dim",
             0,
         )
+
+        self.history_ratio = None
+
+        history_cfg = None
+
+        if isinstance(
+            config,
+            dict,
+        ):
+            history_cfg = config.get(
+                "history_encoder",
+                {},
+            )
+        else:
+            history_cfg = getattr(
+                config,
+                "history_encoder",
+                None,
+            )
+
+        self.history_enabled = False
+
+        if history_cfg is not None:
+            if isinstance(
+                history_cfg,
+                dict,
+            ):
+                self.history_enabled = bool(
+                    history_cfg.get(
+                        "enabled",
+                        False,
+                    )
+                )
+                history_hidden_dim = history_cfg.get(
+                    "hidden_dim",
+                    None,
+                )
+                history_num_layers = history_cfg.get(
+                    "num_layers",
+                    2,
+                )
+                history_dropout = history_cfg.get(
+                    "history_dropout",
+                    0.20,
+                )
+                history_max_continuous_labels = (
+                    history_cfg.get(
+                        "max_continuous_labels",
+                        16,
+                    )
+                )
+            else:
+                self.history_enabled = bool(
+                    getattr(
+                        history_cfg,
+                        "enabled",
+                        False,
+                    )
+                )
+                history_hidden_dim = getattr(
+                    history_cfg,
+                    "hidden_dim",
+                    None,
+                )
+                history_ratio = getattr(
+                    history_cfg,
+                    "ratio",
+                    4,
+                )
+
+                self.history_ratio = history_ratio
+
+                history_auto_scale = getattr(
+                    history_cfg,
+                    "auto_scale",
+                    True,
+                )
+                history_num_layers = getattr(
+                    history_cfg,
+                    "num_layers",
+                    2,
+                )
+                history_dropout = getattr(
+                    history_cfg,
+                    "history_dropout",
+                    0.20,
+                )
+                history_max_continuous_labels = getattr(
+                    history_cfg,
+                    "max_continuous_labels",
+                    16,
+                )
+        else:
+            history_hidden_dim = None
+            history_num_layers = 2
+            history_dropout = 0.20
+            history_max_continuous_labels = 16
+
+        if self.history_enabled:
+            if history_hidden_dim is not None:
+                self.history_dim = int(
+                    history_hidden_dim
+                )
+            elif self.history_dim <= 0:
+
+                if history_auto_scale:
+
+                    self.history_dim = max(
+                        8,
+                        self.transformer_dim //
+                        int(history_ratio)
+                    )
+
+                else:
+
+                    self.history_dim = (
+                        self.transformer_dim // 4
+                    )
+
+            self.history_max_continuous_labels = int(
+                history_max_continuous_labels
+            )
+
+            discrete_cardinalities = getattr(
+                getattr(
+                    config,
+                    "dataset",
+                    {},
+                ),
+                "discrete_cardinalities",
+                {},
+            )
+
+            if not isinstance(
+                discrete_cardinalities,
+                dict,
+            ):
+                if hasattr(
+                    discrete_cardinalities,
+                    "__dict__",
+                ):
+                    discrete_cardinalities = dict(
+                        vars(
+                            discrete_cardinalities
+                        )
+                    )
+                else:
+                    discrete_cardinalities = {}
+
+            self.history_adapter = (
+                HistoryAdapter()
+            )
+
+            self.history_representation = (
+                HistoryRepresentation(
+                    history_dim=
+                    self.history_dim,
+                    discrete_cardinalities=
+                    discrete_cardinalities,
+                    max_continuous_labels=
+                    self.history_max_continuous_labels,
+                )
+            )
+
+            self.history_encoder = (
+                HistoryEncoder(
+                    history_dim=
+                    self.history_dim,
+                    num_layers=
+                    int(history_num_layers),
+                    history_dropout=
+                    float(history_dropout),
+                )
+            )
+
+            self.history_injection = (
+                HistoryInjection(
+                    model_dim=
+                    self.transformer_dim,
+                    history_dim=
+                    self.history_dim,
+                )
+            )
+        else:
+            self.history_adapter = None
+            self.history_representation = None
+            self.history_encoder = None
+            self.history_injection = None
 
         # ==================================================
         # Feature Extractors
@@ -304,7 +545,7 @@ class BaselineB2(nn.Module):
                 self.forecast_horizon,
 
                 history_dim=
-                self.history_dim,
+                0,
             )
         )
 
@@ -375,10 +616,65 @@ class BaselineB2(nn.Module):
             )
         )
 
-        label_history = batch.get(
-            "label_history",
-            None,
-        )
+        #---------------------------------
+        # History
+        #---------------------------------
+
+        history_state = None
+
+        if self.history_enabled:
+
+            history = self.history_adapter(
+
+                continuous_labels=
+                batch.get(
+                    "continuous_labels",
+                    None,
+                ),
+
+                discrete_labels=
+                batch.get(
+                    "discrete_labels",
+                    None,
+                ),
+            )
+
+            history_repr = (
+                self.history_representation(
+
+                    continuous=
+                    history["continuous"],
+
+                    discrete=
+                    history["discrete"],
+
+                    discrete_label_names=(
+                        list(
+                            batch[
+                                "discrete_labels"
+                            ].keys()
+                        )
+                        if batch.get(
+                            "discrete_labels"
+                        )
+                        else None
+                    ),
+                )
+            )
+
+            history_state = (
+                self.history_encoder(
+                    history_repr
+                )
+            )
+
+            fused = (
+                self.history_injection(
+                    fused,
+                    history_state,
+                )
+            )
+
 
         (
             encoder_outputs,
@@ -388,7 +684,7 @@ class BaselineB2(nn.Module):
             fused=fused,
 
             label_history=
-            label_history,
+            None,
         )
 
         recognition_outputs = (
@@ -422,6 +718,12 @@ class BaselineB2(nn.Module):
 
             "fused":
                 fused,
+
+            "history_state":
+                history_state,
+
+            "history_enabled":
+                self.history_enabled,
         }
 
     # ======================================================
@@ -460,4 +762,10 @@ class BaselineB2(nn.Module):
 
             "history_dim":
                 self.history_dim,
+
+            "history_enabled":
+                self.history_enabled,
+
+            "history_ratio":
+                self.history_ratio,
         }
