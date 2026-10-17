@@ -19,7 +19,7 @@ if ROOT not in sys.path:
 from quantum.qsal_pqc import QSALPQC
 from models.attention.gaussian_attention import GaussianAttention
 from models.fusion.qsal_fusion import QSALFusion
-from models.wrappers.qsal import QSAL
+from models.wrappers.qsal_half import QSAL
 
 
 def test_qsal_pqc_forward():

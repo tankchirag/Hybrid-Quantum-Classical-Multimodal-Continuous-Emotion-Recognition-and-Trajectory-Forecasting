@@ -24,7 +24,7 @@ from utils.config import load_config
 from models.wrappers.baseline_b1 import BaselineB1
 from models.wrappers.baseline_b2 import BaselineB2
 from models.wrappers.baseline_b3 import BaselineB3
-from models.wrappers.qsal import QSAL
+from models.wrappers.qsal_half import QSAL
 
 from utils.flops import (
     count_parameters,

@@ -101,7 +101,7 @@ class HistoryRepresentation(
             Dict[str, int]
         ] = None,
         dropout: float = 0.1,
-        max_continuous_labels: int = 16,
+        max_continuous_labels: int = 64,
     ):
         super().__init__()
 

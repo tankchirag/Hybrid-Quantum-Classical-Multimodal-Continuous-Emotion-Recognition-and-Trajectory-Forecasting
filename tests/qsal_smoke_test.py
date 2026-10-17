@@ -23,7 +23,7 @@ if str(PROJECT_ROOT) not in sys.path:
 # ==========================================================
 
 from utils.config import load_config
-from models.wrappers.qsal import QSAL
+from models.wrappers.qsal_half import QSAL
 
 
 def count_parameters(model):

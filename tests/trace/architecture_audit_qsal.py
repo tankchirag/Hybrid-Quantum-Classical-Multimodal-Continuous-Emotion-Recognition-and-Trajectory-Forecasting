@@ -30,7 +30,7 @@ from datasets.loaders.collate import (
     collate,
 )
 
-from models.wrappers.qsal import (
+from models.wrappers.qsal_half import (
     QSAL,
 )
 

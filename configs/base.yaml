@@ -46,4 +46,3 @@ history_encoder:
 
   injection_point: "post_fusion"
 
-  max_continuous_labels: 16
