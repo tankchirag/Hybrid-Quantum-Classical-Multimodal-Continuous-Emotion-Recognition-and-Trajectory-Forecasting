@@ -35,6 +35,20 @@ dataset:
 
   test_split: "test"
 
+  discrete_cardinalities:
+
+    emotion_class: 6
+
+    stress_class: 3
+
+    workload_class: 3
+
+    alertness_class: 3
+
+    drowsiness_class: 4
+
+    kss_score: 9
+
 
 # ==========================================================
 # Modalities
@@ -139,6 +153,30 @@ history:
 
 
 # ==========================================================
+# History Encoder
+# ==========================================================
+
+history_encoder:
+
+  enabled: true
+
+  type: "gru"
+
+  auto_scale: true
+
+  ratio: 4
+
+  hidden_dim: null
+
+  num_layers: 2
+
+  bidirectional: false
+
+  history_dropout: 0.20
+
+  injection_point: "post_fusion"
+
+# ==========================================================
 # Model
 # ==========================================================
 
@@ -185,15 +223,15 @@ training:
 
   batch_size: 8
 
-  epochs: 3
+  epochs: 2
 
   patience: 10
 
   gradient_clip: 1.0
 
-  max_train_batches: 1000
+  max_train_batches: 10
 
-  max_val_batches: 200
+  max_val_batches: 2
 
 
 # ==========================================================
