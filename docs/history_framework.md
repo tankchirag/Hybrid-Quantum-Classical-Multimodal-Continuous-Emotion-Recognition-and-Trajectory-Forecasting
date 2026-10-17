@@ -423,7 +423,69 @@ This demonstrates that substantial temporal-state conditioning can be achieved w
 
 ---
 
-## 14. Final Architecture Summary
+## 14. Configuration
+
+```yaml
+history:
+  enabled: true
+  history_length: 50
+  use_continuous_history: true
+  use_discrete_history: true
+  source: "ground_truth"
+  future_inference_source: "prediction"
+
+history_encoder:
+  enabled: true
+  type: "gru"
+
+  auto_scale: true
+
+  ratio: 4
+
+  hidden_dim: null
+
+  num_layers: 2
+  bidirectional: false
+
+  history_dropout: 0.20
+
+  injection_point: "post_fusion"
+```
+
+---
+
+
+## 15. Implementation Validation
+
+The proposed framework was integrated and
+validated across all model variants used in
+this thesis.
+
+Validated Architectures:
+
+• QSAL
+• Baseline B1
+• Baseline B2
+• Baseline B3
+
+Validation Procedure:
+
+1. Model construction
+2. Forward-pass verification
+3. Loss computation
+4. Backpropagation
+5. Mini training runs
+6. Validation runs
+
+All architectures successfully completed
+training and validation without requiring
+model-specific modifications to the history
+framework.
+
+---
+
+
+## 16. Final Architecture Summary
 
 The finalized History-Aware State Conditioning Framework consists of:
 
