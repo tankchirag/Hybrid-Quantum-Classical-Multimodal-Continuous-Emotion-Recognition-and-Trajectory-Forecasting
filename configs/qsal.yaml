@@ -159,7 +159,7 @@ history:
 
 history_encoder:
 
-  enabled: false
+  enabled: true
 
   type: "gru"
 
@@ -263,13 +263,13 @@ training:
 
   batch_size: 8
 
-  epochs: 3
+  epochs: 1
 
   patience: 10
 
   gradient_clip: 1.0
 
-  max_train_batches: 10
+  max_train_batches: 2
 
   max_val_batches: 2
 

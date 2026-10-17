@@ -786,6 +786,18 @@ class QSAL(nn.Module):
 
             "history_dim":
                 self.history_dim,
+
+            "history_enabled":
+                self.history_enabled,
+
+            "history_ratio":
+                self.history_ratio,
+
+            "num_discrete_targets":
+                len(self.discrete_targets),
+
+            "num_continuous_targets":
+                len(self.continuous_targets),
         }
 
     def extra_repr(
