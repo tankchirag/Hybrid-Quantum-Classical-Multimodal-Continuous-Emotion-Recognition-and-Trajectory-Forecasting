@@ -414,29 +414,31 @@ class QSAL(nn.Module):
                 history_max_continuous_labels
             )
 
-            discrete_cardinalities = {}
-            dataset_cfg = getattr(
-                config,
-                "dataset",
+            discrete_cardinalities = getattr(
+                getattr(
+                    config,
+                    "dataset",
+                    {},
+                ),
+                "discrete_cardinalities",
                 {},
             )
 
-            if isinstance(
-                dataset_cfg,
+            if not isinstance(
+                discrete_cardinalities,
                 dict,
             ):
-                discrete_cardinalities = (
-                    dataset_cfg.get(
-                        "discrete_cardinalities",
-                        {},
+                if hasattr(
+                    discrete_cardinalities,
+                    "__dict__",
+                ):
+                    discrete_cardinalities = dict(
+                        vars(
+                            discrete_cardinalities
+                        )
                     )
-                )
-            else:
-                discrete_cardinalities = getattr(
-                    dataset_cfg,
-                    "discrete_cardinalities",
-                    {},
-                )
+                else:
+                    discrete_cardinalities = {}
 
             self.history_adapter = (
                 HistoryAdapter()

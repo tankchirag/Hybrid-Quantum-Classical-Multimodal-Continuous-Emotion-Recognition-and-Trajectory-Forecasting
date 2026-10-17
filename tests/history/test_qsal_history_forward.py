@@ -53,21 +53,21 @@ def build_config():
 
             video=True,
 
-            ecg=False,
+            ecg=True,
 
-            eda=False,
+            eda=True,
 
-            eeg=False,
+            eeg=True,
 
-            emg=False,
+            emg=True,
 
-            resp=False,
+            resp=True,
 
-            bpm=False,
+            bpm=True,
 
-            eye=False,
+            eye=True,
 
-            text=False,
+            text=True,
         ),
 
         # ----------------------------------
