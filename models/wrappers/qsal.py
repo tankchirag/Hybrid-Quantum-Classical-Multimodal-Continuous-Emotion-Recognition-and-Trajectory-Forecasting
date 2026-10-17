@@ -190,18 +190,54 @@ class QSAL(nn.Module):
             config,
             "discrete_targets",
         ):
+
             self.discrete_targets = (
                 config.discrete_targets
             )
 
-        elif hasattr(
-            config,
-            "discrete_labels",
-        ):
+        else:
+
+            dataset_cfg = getattr(
+                config,
+                "dataset",
+                None,
+            )
+
             self.discrete_targets = {}
 
-        else:
-            self.discrete_targets = {}
+            if (
+                dataset_cfg is not None
+                and
+                hasattr(
+                    dataset_cfg,
+                    "discrete_cardinalities",
+                )
+            ):
+
+                discrete_cardinalities = (
+                    dataset_cfg
+                    .discrete_cardinalities
+                )
+
+                if isinstance(
+                    discrete_cardinalities,
+                    dict,
+                ):
+
+                    self.discrete_targets = (
+                        discrete_cardinalities
+                    )
+
+                elif hasattr(
+                    discrete_cardinalities,
+                    "__dict__",
+                ):
+
+                    self.discrete_targets = dict(
+                        vars(
+                            discrete_cardinalities
+                        )
+                    )
 
         # ==================================================
         # Model Parameters
@@ -379,6 +415,17 @@ class QSAL(nn.Module):
                     "hidden_dim",
                     None,
                 )
+                history_ratio = getattr(
+                    history_cfg,
+                    "ratio",
+                    4,
+                )
+
+                history_auto_scale = getattr(
+                    history_cfg,
+                    "auto_scale",
+                    True,
+                )
                 history_num_layers = getattr(
                     history_cfg,
                     "num_layers",
@@ -406,9 +453,20 @@ class QSAL(nn.Module):
                     history_hidden_dim
                 )
             elif self.history_dim <= 0:
-                self.history_dim = (
-                    self.transformer_dim // 4
-                )
+
+                if history_auto_scale:
+
+                    self.history_dim = max(
+                        8,
+                        self.transformer_dim //
+                        int(history_ratio)
+                    )
+
+                else:
+
+                    self.history_dim = (
+                        self.transformer_dim // 4
+                    )
 
             self.history_max_continuous_labels = int(
                 history_max_continuous_labels
