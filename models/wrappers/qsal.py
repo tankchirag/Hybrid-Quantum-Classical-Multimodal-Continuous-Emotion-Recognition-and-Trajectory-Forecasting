@@ -354,6 +354,8 @@ class QSAL(nn.Module):
             0,
         )
 
+        self.history_ratio = None
+
         history_cfg = None
 
         if isinstance(
@@ -420,6 +422,8 @@ class QSAL(nn.Module):
                     "ratio",
                     4,
                 )
+
+                self.history_ratio = history_ratio
 
                 history_auto_scale = getattr(
                     history_cfg,
