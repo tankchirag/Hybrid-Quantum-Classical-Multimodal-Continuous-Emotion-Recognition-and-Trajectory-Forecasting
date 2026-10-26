@@ -54,6 +54,22 @@ class ProcessedSubject:
     subject_id: int
 
 
+@dataclass
+class ProcessedVideo:
+
+    X: np.ndarray
+
+    y: np.ndarray
+
+    feature_names: list[str]
+
+    target_names: list[str]
+
+    subject_id: int
+
+    video_id: int
+
+
 class CaseProcessor(
     BaseDatasetProcessor
 ):
@@ -195,4 +211,34 @@ class CaseProcessor(
 
             subject_id=
             subject_id,
+        )
+
+
+    def process_video(
+        self,
+        subject_id: int,
+        video_id: int,
+    ) -> ProcessedVideo:
+
+        subject = self.process_subject(
+            subject_id
+        )
+
+        return ProcessedVideo(
+
+            X=subject.X,
+
+            y=subject.y,
+
+            feature_names=
+            subject.feature_names,
+
+            target_names=
+            subject.target_names,
+
+            subject_id=
+            subject.subject_id,
+
+            video_id=
+            video_id,
         )
