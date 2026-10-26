@@ -470,6 +470,25 @@ class CaseAuditor(DatasetAuditor):
         }
 
 
+    def generate_reports(
+        self,
+        report: Dict[str, Any],
+    ) -> None:
+
+        self.export_json(
+            report,
+            Path(
+                "reports/case_statistics.json"
+            ),
+        )
+
+        self.export_markdown(
+            report,
+            Path(
+                "docs/datasets/case_dataset_spec.md"
+            ),
+        )
+
 
     def audit(self):
 

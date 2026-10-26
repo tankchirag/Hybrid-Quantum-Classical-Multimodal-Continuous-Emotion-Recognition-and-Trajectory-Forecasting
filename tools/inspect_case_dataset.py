@@ -7,6 +7,7 @@ import sys
 import os
 from pathlib import Path
 from networkx import config
+from sympy import pprint
 
 DATASET_ROOT = Path(
     r"D:\Datasets\CASE"
@@ -37,8 +38,21 @@ def main() -> None:
 
     report = auditor.audit()
 
-    print("\nCASE DATASET AUDIT\n")
-    print(report)
+    auditor.generate_reports(
+        report
+    )
+
+    print(
+        "\nCASE DATASET AUDIT\n"
+    )
+
+    pprint(report)
+
+    print(
+        "\nGenerated:\n"
+        "reports/case_statistics.json\n"
+        "docs/datasets/case_dataset_spec.md\n"
+    )
 
 
 if __name__ == "__main__":

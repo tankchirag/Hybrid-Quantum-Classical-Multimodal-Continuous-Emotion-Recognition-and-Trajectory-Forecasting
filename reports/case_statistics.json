@@ -1,0 +1,302 @@
+{
+    "dataset_root": "D:\\Datasets\\CASE",
+    "physiology_files": 30,
+    "annotation_files": 30,
+    "subjects_found": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30
+    ],
+    "missing_subjects": [],
+    "physiology_schema": {
+        "columns": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8
+        ],
+        "column_count": 9,
+        "sample_row": [
+            1e-05,
+            2.842302,
+            2.599342,
+            2.539547,
+            2.420449,
+            2.885506,
+            2.029153,
+            2.034738,
+            2.026196
+        ]
+    },
+    "annotation_schema": {
+        "columns": [
+            0,
+            1,
+            2
+        ],
+        "column_count": 3,
+        "sample_row": [
+            0.001,
+            0.0,
+            0.0
+        ]
+    },
+    "sampling_summary": {
+        "physiology_hz": 1000.0000000000002,
+        "annotation_hz": 19.992525732453906
+    },
+    "duration_summary": {
+        "physiology_duration": 2451.5989999999997,
+        "annotation_duration": 2451.416127
+    },
+    "missing_values": {
+        "subject_1": {
+            "physiology_nan_count": 0,
+            "annotation_nan_count": 0
+        },
+        "subject_2": {
+            "physiology_nan_count": 0,
+            "annotation_nan_count": 0
+        },
+        "subject_3": {
+            "physiology_nan_count": 0,
+            "annotation_nan_count": 0
+        },
+        "subject_4": {
+            "physiology_nan_count": 0,
+            "annotation_nan_count": 0
+        },
+        "subject_5": {
+            "physiology_nan_count": 0,
+            "annotation_nan_count": 0
+        },
+        "subject_6": {
+            "physiology_nan_count": 0,
+            "annotation_nan_count": 0
+        },
+        "subject_7": {
+            "physiology_nan_count": 0,
+            "annotation_nan_count": 0
+        },
+        "subject_8": {
+            "physiology_nan_count": 0,
+            "annotation_nan_count": 0
+        },
+        "subject_9": {
+            "physiology_nan_count": 0,
+            "annotation_nan_count": 0
+        },
+        "subject_10": {
+            "physiology_nan_count": 0,
+            "annotation_nan_count": 0
+        },
+        "subject_11": {
+            "physiology_nan_count": 0,
+            "annotation_nan_count": 0
+        },
+        "subject_12": {
+            "physiology_nan_count": 0,
+            "annotation_nan_count": 0
+        },
+        "subject_13": {
+            "physiology_nan_count": 0,
+            "annotation_nan_count": 0
+        },
+        "subject_14": {
+            "physiology_nan_count": 0,
+            "annotation_nan_count": 0
+        },
+        "subject_15": {
+            "physiology_nan_count": 0,
+            "annotation_nan_count": 0
+        },
+        "subject_16": {
+            "physiology_nan_count": 0,
+            "annotation_nan_count": 0
+        },
+        "subject_17": {
+            "physiology_nan_count": 0,
+            "annotation_nan_count": 0
+        },
+        "subject_18": {
+            "physiology_nan_count": 0,
+            "annotation_nan_count": 0
+        },
+        "subject_19": {
+            "physiology_nan_count": 0,
+            "annotation_nan_count": 0
+        },
+        "subject_20": {
+            "physiology_nan_count": 0,
+            "annotation_nan_count": 0
+        },
+        "subject_21": {
+            "physiology_nan_count": 0,
+            "annotation_nan_count": 0
+        },
+        "subject_22": {
+            "physiology_nan_count": 0,
+            "annotation_nan_count": 0
+        },
+        "subject_23": {
+            "physiology_nan_count": 0,
+            "annotation_nan_count": 0
+        },
+        "subject_24": {
+            "physiology_nan_count": 0,
+            "annotation_nan_count": 0
+        },
+        "subject_25": {
+            "physiology_nan_count": 0,
+            "annotation_nan_count": 0
+        },
+        "subject_26": {
+            "physiology_nan_count": 0,
+            "annotation_nan_count": 0
+        },
+        "subject_27": {
+            "physiology_nan_count": 0,
+            "annotation_nan_count": 0
+        },
+        "subject_28": {
+            "physiology_nan_count": 0,
+            "annotation_nan_count": 0
+        },
+        "subject_29": {
+            "physiology_nan_count": 0,
+            "annotation_nan_count": 0
+        },
+        "subject_30": {
+            "physiology_nan_count": 0,
+            "annotation_nan_count": 0
+        }
+    },
+    "flatline_check": {
+        "subject_1": [],
+        "subject_2": [],
+        "subject_3": [],
+        "subject_4": [],
+        "subject_5": [],
+        "subject_6": [],
+        "subject_7": [],
+        "subject_8": [],
+        "subject_9": [],
+        "subject_10": [],
+        "subject_11": [],
+        "subject_12": [],
+        "subject_13": [],
+        "subject_14": [],
+        "subject_15": [],
+        "subject_16": [],
+        "subject_17": [],
+        "subject_18": [],
+        "subject_19": [],
+        "subject_20": [],
+        "subject_21": [],
+        "subject_22": [],
+        "subject_23": [],
+        "subject_24": [],
+        "subject_25": [],
+        "subject_26": [],
+        "subject_27": [],
+        "subject_28": [],
+        "subject_29": [],
+        "subject_30": []
+    },
+    "signal_quality": {
+        "channel_1": {
+            "mean": 2.8415723410040257,
+            "std": 0.011656611697706319,
+            "min": 2.318271,
+            "max": 3.20354
+        },
+        "channel_2": {
+            "mean": 2.569828203498576,
+            "std": 0.021367054058323776,
+            "min": 2.18439,
+            "max": 3.262515
+        },
+        "channel_3": {
+            "mean": 2.937428020915614,
+            "std": 0.4343576681041522,
+            "min": -0.004356,
+            "max": 4.820844
+        },
+        "channel_4": {
+            "mean": 2.5596897021845297,
+            "std": 0.0909312096947503,
+            "min": 2.408457,
+            "max": 2.839674
+        },
+        "channel_5": {
+            "mean": 2.7709459010982984,
+            "std": 0.16219141662662426,
+            "min": 2.437862,
+            "max": 3.144402
+        },
+        "channel_6": {
+            "mean": 2.037953508120462,
+            "std": 0.1133747385508503,
+            "min": 2.017161,
+            "max": 4.784702
+        },
+        "channel_7": {
+            "mean": 2.0301266231249797,
+            "std": 0.018477047460617974,
+            "min": 2.018968,
+            "max": 4.234206
+        },
+        "channel_8": {
+            "mean": 2.030654191741951,
+            "std": 0.063951518300627,
+            "min": 1.673176,
+            "max": 4.56079
+        }
+    },
+    "label_quality": {
+        "valence": {
+            "mean": 907.512202015816,
+            "std": 7331.514537648015,
+            "min": -26225.0,
+            "max": 26225.0
+        },
+        "arousal": {
+            "mean": 874.8343925823214,
+            "std": 6791.276827306342,
+            "min": -26225.0,
+            "max": 26225.0
+        }
+    }
+}
