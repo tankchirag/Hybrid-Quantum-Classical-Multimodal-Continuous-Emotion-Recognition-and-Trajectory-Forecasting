@@ -150,6 +150,16 @@ normalization:
 
   epsilon: 0.000001
 
+  apply_to:
+    - ecg
+    - bvp
+    - gsr
+    - rsp
+    - skt
+    - emg_zygo
+    - emg_coru
+    - emg_trap
+
 # ==========================================================
 # Harmonization
 # ==========================================================
