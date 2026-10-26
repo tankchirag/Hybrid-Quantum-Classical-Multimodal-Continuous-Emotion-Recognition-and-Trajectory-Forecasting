@@ -46,14 +46,11 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
+from configs.dataset_config import DatasetConfig
 
-# ==========================================================
-# Constants
-# ==========================================================
-
-TARGET_FREQUENCY_HZ = 2
-TARGET_PERIOD_MS = 500
-
+CASE_CONFIG = DatasetConfig.load(
+    "configs/datasets/case.yaml"
+)
 
 # ==========================================================
 # Result
@@ -90,10 +87,19 @@ class CaseHarmonizer:
 
     def __init__(
         self,
-        target_period_ms: int = TARGET_PERIOD_MS,
+        config: DatasetConfig = CASE_CONFIG,
     ) -> None:
 
-        self.target_period_ms = target_period_ms
+        self.config = config
+
+        self.target_period_ms = (
+            config.harmonization.target_period_ms
+        )
+
+        self.target_sampling_rate_hz = (
+            config.harmonization.target_sampling_rate_hz
+        )
+
 
     # ------------------------------------------------------
     # Grid

@@ -1,0 +1,292 @@
+# ==========================================================
+# CASE Dataset
+#
+# Continuous Affect Simulation Environment
+#
+# Phase 1 Reference Configuration
+#
+# Purpose
+# -------
+# Author-consistent preprocessing
+# +
+# Thesis harmonization
+#
+# This file acts as the single source of truth
+# for all CASE preprocessing, synchronization,
+# temporal harmonization, window generation,
+# export and evaluation.
+# ==========================================================
+
+dataset:
+
+  name: "case"
+
+  version: "phase1"
+
+  benchmark: true
+
+  author_consistent_preprocessing: true
+
+  description: >
+    Continuous Affect Simulation Environment (CASE)
+    physiological emotion dataset with synchronized
+    multimodal biosignals and continuous
+    valence-arousal annotations.
+
+# ==========================================================
+# Subjects
+# ==========================================================
+
+subjects:
+
+  total_subjects: 30
+
+# ==========================================================
+# Native Physiology Sampling Rates
+# ==========================================================
+
+sampling_rates:
+
+  physiology_hz: 1000
+
+  annotation_hz: 20
+
+# ==========================================================
+# Author Interpolation
+# ==========================================================
+
+author_preprocessing:
+
+  enabled: true
+
+  interpolation_grid_ms: 1
+
+  annotation_grid_ms: 50
+
+# ==========================================================
+# Modalities
+# ==========================================================
+
+modalities:
+
+  ecg: true
+
+  bvp: true
+
+  gsr: true
+
+  rsp: true
+
+  skt: true
+
+  emg_zygo: true
+
+  emg_coru: true
+
+  emg_trap: true
+
+# ==========================================================
+# Continuous Labels
+# ==========================================================
+
+continuous_labels:
+
+  - valence
+
+  - arousal
+
+# ==========================================================
+# Video Policy
+# ==========================================================
+
+videos:
+
+  include:
+
+    - 1
+    - 2
+    - 3
+    - 4
+    - 5
+    - 6
+    - 7
+    - 8
+
+  exclude:
+
+    - 10
+    - 11
+    - 12
+
+# ==========================================================
+# Label Scaling
+# ==========================================================
+
+label_processing:
+
+  scale_labels: true
+
+  source_range:
+
+    min: 0.5
+    max: 9.5
+
+  target_range:
+
+    min: -1.0
+    max: 1.0
+
+# ==========================================================
+# Subject Normalization
+# ==========================================================
+
+normalization:
+
+  enabled: true
+
+  strategy: "zscore"
+
+  scope: "subject"
+
+  epsilon: 0.000001
+
+# ==========================================================
+# Harmonization
+# ==========================================================
+
+harmonization:
+
+  enabled: true
+
+  target_sampling_rate_hz: 2
+
+  target_period_ms: 500
+
+# ==========================================================
+# Label Downsampling
+# ==========================================================
+
+label_resampling:
+
+  enabled: true
+
+  anti_aliasing:
+
+    enabled: true
+
+    method: "boxcar"
+
+    window_samples: 10
+
+# ==========================================================
+# Physiology Processing
+# ==========================================================
+
+physiology_processing:
+
+  smoothing:
+
+    enabled: false
+
+  denoising:
+
+    enabled: false
+
+  handcrafted_features:
+
+    enabled: false
+
+# ==========================================================
+# Temporal Contract
+# ==========================================================
+
+history:
+
+  enabled: true
+
+  #
+  # 2 Hz
+  #
+  # 60 sec
+  #
+  # => 120 steps
+  #
+
+  length_seconds: 60
+
+  length_steps: 120
+
+forecasting:
+
+  enabled: true
+
+  #
+  # 2 Hz
+  #
+  # 10 sec
+  #
+  # => 20 steps
+  #
+
+  horizon_seconds: 10
+
+  horizon_steps: 20
+
+# ==========================================================
+# Window Generation
+# ==========================================================
+
+windowing:
+
+  stride_steps: 1
+
+# ==========================================================
+# Train / Validation / Test
+# ==========================================================
+
+splits:
+
+  strategy: "subject_independent"
+
+  train_subjects:
+
+    start: 1
+    end: 20
+
+  validation_subjects:
+
+    start: 21
+    end: 25
+
+  test_subjects:
+
+    start: 26
+    end: 30
+
+# ==========================================================
+# NPZ Export
+# ==========================================================
+
+export:
+
+  format: "npz"
+
+  save_feature_names: true
+
+  save_target_names: true
+
+  save_subject_id: true
+
+  save_video_ids: true
+
+  save_config_snapshot: true
+
+  save_processing_metadata: true
+
+# ==========================================================
+# Reproducibility
+# ==========================================================
+
+reproducibility:
+
+  seed: 42
