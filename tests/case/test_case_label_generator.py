@@ -59,5 +59,21 @@ def main() -> None:
     )
 
 
+    zero_positions = np.where(
+        result.labels == 0
+    )[0]
+
+    print(
+        "Zero positions:",
+        zero_positions
+    )
+
+    print(
+        "Last index:",
+        len(result.labels) - 1
+    )
+
+    assert result.trimmed_rows <= 1
+
 if __name__ == "__main__":
     main()
