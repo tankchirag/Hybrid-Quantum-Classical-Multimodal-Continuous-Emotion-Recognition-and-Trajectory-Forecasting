@@ -33,15 +33,58 @@ VIDEO_ID_TO_NAME = {
 AUTHOR_SEQUENCE_DURATION_MS = 2451583.333
 
 
+def infer_category(
+    video_name: str,
+) -> str:
+
+    if video_name.startswith(
+        "amusing"
+    ):
+        return "amusing"
+
+    if video_name.startswith(
+        "boring"
+    ):
+        return "boring"
+
+    if video_name.startswith(
+        "relaxed"
+    ):
+        return "relaxed"
+
+    if video_name.startswith(
+        "scary"
+    ):
+        return "scary"
+
+    if video_name == "startVid":
+        return "baseline_start"
+
+    if video_name == "bluVid":
+        return "baseline_blue"
+
+    if video_name == "endVid":
+        return "baseline_end"
+
+    return "unknown"
+
+
 @dataclass(frozen=True)
 class VideoInfo:
-    """
-    Metadata for one video.
-    """
 
     video_id: int
+
     video_name: str
+
     duration_ms: float
+
+    category: str = "unknown"
+
+    source_movie: str | None = None
+
+    source_url: str | None = None
+
+    notes: str | None = None
 
 
 @dataclass
@@ -52,6 +95,18 @@ class SubjectSequence:
 
     subject_id: int
     video_ids: List[int]
+
+
+@dataclass(frozen=True)
+class ParticipantInfo:
+
+    subject_id: int
+
+    sex: str
+
+    age_group: str
+
+    sequence_id: int
 
 
 class CaseMetadataManager:
@@ -90,9 +145,110 @@ class CaseMetadataManager:
             SubjectSequence,
         ] = {}
 
+        self.participants: Dict[
+            int,
+            ParticipantInfo,
+        ] = {}
+
     # --------------------------------------------------
     # Video durations
     # --------------------------------------------------
+
+    def load_rich_video_metadata(
+        self,
+    ) -> Dict[int, VideoInfo]:
+
+        file_path = (
+            self.metadata_root
+            / "videos.xlsx"
+        )
+
+        if not file_path.exists():
+            raise FileNotFoundError(
+                f"Missing file: {file_path}"
+            )
+
+        df = pd.read_excel(
+            file_path,
+            engine="openpyxl",
+        )
+
+        video_infos: Dict[
+            int,
+            VideoInfo,
+        ] = {}
+
+        def optional_text(
+            value: object,
+        ) -> str | None:
+
+            if pd.isna(value):
+                return None
+
+            return str(value).strip()
+
+        for _, row in df.iterrows():
+
+            #
+            # Skip header/helper rows
+            #
+
+            if pd.isna(
+                row["Video-ID"]
+            ):
+                continue
+
+            if pd.isna(
+                row["Video-label"]
+            ):
+                continue
+
+            video_name = str(
+                row["Video-label"]
+            ).strip()
+
+            video_id = int(
+                row["Video-ID"]
+            )
+
+            if video_name not in VIDEO_NAME_TO_ID:
+                raise ValueError(
+                    f"Unknown video "
+                    f"name: {video_name}"
+                )
+
+            if VIDEO_NAME_TO_ID[video_name] != video_id:
+                raise ValueError(
+                    f"Video ID mismatch "
+                    f"for {video_name}: "
+                    f"{video_id}"
+                )
+
+            video_infos[
+                video_id
+            ] = VideoInfo(
+                video_id=video_id,
+                video_name=video_name,
+                duration_ms=float(
+                    row["Duration (in ms)"]
+                ),
+                category=infer_category(
+                    video_name
+                ),
+                source_movie=optional_text(
+                    row["Source (Year)"]
+                ),
+                source_url=optional_text(
+                    row["Source--URL"]
+                ),
+                notes=optional_text(
+                    row["Notes"]
+                ),
+            )
+
+        self.video_infos = video_infos
+
+        return video_infos
 
     def load_video_durations(
         self,
@@ -155,6 +311,60 @@ class CaseMetadataManager:
         self.video_infos = video_infos
 
         return video_infos
+
+    def load_participants(
+        self,
+    ) -> Dict[int, ParticipantInfo]:
+
+        file_path = (
+            self.metadata_root
+            / "participants.xlsx"
+        )
+
+        if not file_path.exists():
+            raise FileNotFoundError(
+                f"Missing file: {file_path}"
+            )
+
+        df = pd.read_excel(
+            file_path,
+            engine="openpyxl",
+        )
+
+        df.columns = [
+            str(c).strip()
+            for c in df.columns
+        ]
+
+        participants: Dict[
+            int,
+            ParticipantInfo,
+        ] = {}
+
+        for _, row in df.iterrows():
+
+            subject_id = int(
+                row["Participant-ID"]
+            )
+
+            participants[
+                subject_id
+            ] = ParticipantInfo(
+                subject_id=subject_id,
+                sex=str(
+                    row["Sex"]
+                ).strip(),
+                age_group=str(
+                    row["Age-Group"]
+                ).strip(),
+                sequence_id=int(
+                    row["Video Sequence Used"]
+                ),
+            )
+
+        self.participants = participants
+
+        return participants
 
     # --------------------------------------------------
     # Subject sequences
@@ -363,11 +573,59 @@ class CaseMetadataManager:
         self,
     ) -> None:
 
-        self.load_video_durations()
+        self.load_rich_video_metadata()
+
+        self.load_participants()
 
         self.load_subject_sequences()
 
         self.validate()
+
+    def get_video_info(
+        self,
+        video_id: int,
+    ) -> VideoInfo:
+
+        return self.video_infos[
+            video_id
+        ]
+
+
+    def get_video_name(
+        self,
+        video_id: int,
+    ) -> str:
+
+        return self.video_infos[
+            video_id
+        ].video_name
+
+    def get_video_category(
+        self,
+        video_id: int,
+    ) -> str:
+
+        return self.video_infos[
+            video_id
+        ].category
+
+    def get_participant_info(
+        self,
+        subject_id: int,
+    ) -> ParticipantInfo:
+
+        return self.participants[
+            subject_id
+        ]
+
+    def get_subject_sequence_id(
+        self,
+        subject_id: int,
+    ) -> int:
+
+        return self.participants[
+            subject_id
+        ].sequence_id
 
     # --------------------------------------------------
     # Convenience helpers
