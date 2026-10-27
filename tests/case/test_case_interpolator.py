@@ -94,6 +94,14 @@ def main():
         interp.annotations.head()
     )
 
+    print(
+        interp.physiology.columns
+    )
+
+    print(
+        interp.annotations.columns
+    )
+
 
 if __name__ == "__main__":
     main()
