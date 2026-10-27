@@ -88,10 +88,10 @@ class CaseProcessor(
             metadata_root
         )
 
-    def process_subject(
+    def _build_scaled_dataframe(
         self,
         subject_id: int,
-    ) -> ProcessedSubject:
+    ):
 
         metadata = (
             CaseMetadataManager(
@@ -128,10 +128,6 @@ class CaseProcessor(
 
         scaler = (
             LabelScaler()
-        )
-
-        temporal = (
-            TemporalContract()
         )
 
         physiology_file = (
@@ -191,9 +187,26 @@ class CaseProcessor(
             )
         )
 
+        return scaled.dataframe
+
+    def process_subject(
+        self,
+        subject_id: int,
+    ) -> ProcessedSubject:
+
+        temporal = (
+            TemporalContract()
+        )
+
+        dataframe = (
+            self._build_scaled_dataframe(
+                subject_id
+            )
+        )
+
         contract = (
             temporal.process_subject(
-                scaled.dataframe
+                dataframe
             )
         )
 
@@ -220,24 +233,53 @@ class CaseProcessor(
         video_id: int,
     ) -> ProcessedVideo:
 
-        subject = self.process_subject(
-            subject_id
+        temporal = (
+            TemporalContract()
+        )
+
+        dataframe = (
+            self._build_scaled_dataframe(
+                subject_id
+            )
+        )
+
+        video_df = (
+            dataframe[
+                dataframe["video"]
+                ==
+                video_id
+            ]
+            .copy()
+        )
+
+        if len(video_df) == 0:
+
+            raise ValueError(
+                f"No rows found for "
+                f"subject={subject_id}, "
+                f"video={video_id}"
+            )
+
+        contract = (
+            temporal.process_subject(
+                video_df
+            )
         )
 
         return ProcessedVideo(
 
-            X=subject.X,
+            X=contract.X,
 
-            y=subject.y,
+            y=contract.y,
 
             feature_names=
-            subject.feature_names,
+            contract.feature_names,
 
             target_names=
-            subject.target_names,
+            contract.target_names,
 
             subject_id=
-            subject.subject_id,
+            subject_id,
 
             video_id=
             video_id,
