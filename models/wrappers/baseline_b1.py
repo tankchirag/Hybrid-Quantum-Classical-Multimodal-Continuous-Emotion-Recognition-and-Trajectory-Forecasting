@@ -257,11 +257,29 @@ class BaselineB1(nn.Module):
             0.1,
         )
 
-        self.forecast_horizon = getattr(
+        forecast_cfg = getattr(
             config,
-            "forecast_horizon",
-            25,
+            "forecasting",
+            None,
         )
+
+        if (
+            forecast_cfg is not None
+            and
+            hasattr(
+                forecast_cfg,
+                "horizon",
+            )
+        ):
+            self.forecast_horizon = (
+                forecast_cfg.horizon
+            )
+        else:
+            self.forecast_horizon = getattr(
+                config,
+                "forecast_horizon",
+                25,
+            )
 
         # ==================================================
         # History Configuration
@@ -276,6 +294,22 @@ class BaselineB1(nn.Module):
         self.history_ratio = None
 
         history_cfg = None
+
+        # ----------------------------------
+        # Safe defaults
+        # ----------------------------------
+
+        history_hidden_dim = None
+
+        history_ratio = 4
+
+        history_auto_scale = True
+
+        history_num_layers = 2
+
+        history_dropout = 0.20
+
+        history_max_continuous_labels = 16
 
         if isinstance(
             config,
@@ -305,24 +339,41 @@ class BaselineB1(nn.Module):
                         False,
                     )
                 )
+
                 history_hidden_dim = history_cfg.get(
                     "hidden_dim",
                     None,
                 )
+
+                history_ratio = history_cfg.get(
+                    "ratio",
+                    4,
+                )
+
+                self.history_ratio = history_ratio
+
+                history_auto_scale = history_cfg.get(
+                    "auto_scale",
+                    True,
+                )
+
                 history_num_layers = history_cfg.get(
                     "num_layers",
                     2,
                 )
+
                 history_dropout = history_cfg.get(
                     "history_dropout",
                     0.20,
                 )
+
                 history_max_continuous_labels = (
                     history_cfg.get(
                         "max_continuous_labels",
                         16,
                     )
                 )
+
             else:
                 self.history_enabled = bool(
                     getattr(
@@ -482,9 +533,13 @@ class BaselineB1(nn.Module):
         # ==================================================
 
         self.tokenizer = Tokenizer(
-
             embedding_dim=
             self.embedding_dim,
+
+            token_order=
+            list(
+                self.modalities.keys()
+            )
         )
 
         # ==================================================
@@ -620,6 +675,11 @@ class BaselineB1(nn.Module):
             "modalities"
         ]
 
+
+        print(
+            self.extractors.active_modalities
+        )
+
         # ----------------------------------
         # Feature Extraction
         # ----------------------------------
@@ -629,6 +689,15 @@ class BaselineB1(nn.Module):
                 modalities
             )
         )
+
+
+
+        for k, v in embeddings.items():
+
+            print(
+                k,
+                tuple(v.shape),
+            )
 
         # ----------------------------------
         # Tokenization

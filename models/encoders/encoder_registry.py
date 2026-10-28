@@ -38,6 +38,24 @@ from .video_encoder import VideoEncoder
 from .text_encoder import TextEncoder
 
 
+from .bvp_encoder import BVPEncoder
+from .gsr_encoder import GSREncoder
+from .rsp_encoder import RSPEncoder
+from .skt_encoder import SKTEncoder
+
+from .emg_zygo_encoder import (
+    EMGZygoEncoder,
+)
+
+from .emg_coru_encoder import (
+    EMGCoruEncoder,
+)
+
+from .emg_trap_encoder import (
+    EMGTrapEncoder,
+)
+
+
 ENCODER_REGISTRY = {
 
     # ----------------------------------
@@ -50,6 +68,15 @@ ENCODER_REGISTRY = {
     "emg": EMGEncoder,
     "resp": RESPEncoder,
     "bpm": BPMEncoder,
+    "bvp": BVPEncoder,
+    "gsr": GSREncoder,
+    "rsp": RSPEncoder,
+    "skt": SKTEncoder,
+
+    "emg_zygo": EMGZygoEncoder,
+    "emg_coru": EMGCoruEncoder,
+    "emg_trap": EMGTrapEncoder,
+
 
     # ----------------------------------
     # Behavioral
