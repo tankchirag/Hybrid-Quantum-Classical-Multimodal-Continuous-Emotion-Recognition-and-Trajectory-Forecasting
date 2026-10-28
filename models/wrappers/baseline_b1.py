@@ -263,7 +263,19 @@ class BaselineB1(nn.Module):
             None,
         )
 
-        if (
+        if isinstance(
+            forecast_cfg,
+            dict,
+        ):
+
+            self.forecast_horizon = int(
+                forecast_cfg.get(
+                    "horizon",
+                    25,
+                )
+            )
+
+        elif (
             forecast_cfg is not None
             and
             hasattr(
@@ -271,15 +283,19 @@ class BaselineB1(nn.Module):
                 "horizon",
             )
         ):
-            self.forecast_horizon = (
+
+            self.forecast_horizon = int(
                 forecast_cfg.horizon
             )
+
         else:
+
             self.forecast_horizon = getattr(
                 config,
                 "forecast_horizon",
                 25,
             )
+
 
         # ==================================================
         # History Configuration
@@ -676,9 +692,7 @@ class BaselineB1(nn.Module):
         ]
 
 
-        print(
-            self.extractors.active_modalities
-        )
+
 
         # ----------------------------------
         # Feature Extraction
@@ -691,13 +705,6 @@ class BaselineB1(nn.Module):
         )
 
 
-
-        for k, v in embeddings.items():
-
-            print(
-                k,
-                tuple(v.shape),
-            )
 
         # ----------------------------------
         # Tokenization
@@ -715,13 +722,27 @@ class BaselineB1(nn.Module):
             tokens
         )
 
-         #---------------------------------
+        #---------------------------------
         # History
         #---------------------------------
 
         history_state = None
 
-        if self.history_enabled:
+        has_history = (
+            batch.get(
+                "continuous_labels"
+            ) is not None
+            or
+            batch.get(
+                "discrete_labels"
+            ) is not None
+        )
+
+        if (
+            self.history_enabled
+            and
+            has_history
+        ):
 
             history = self.history_adapter(
 
@@ -740,6 +761,7 @@ class BaselineB1(nn.Module):
 
             history_repr = (
                 self.history_representation(
+
 
                     continuous=
                     history["continuous"],

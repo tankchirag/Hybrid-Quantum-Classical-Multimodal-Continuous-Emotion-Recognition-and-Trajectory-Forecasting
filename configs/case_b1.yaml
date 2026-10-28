@@ -117,7 +117,7 @@ history:
 
 history_encoder:
 
-  enabled: false
+  enabled: true
 
   type: "gru"
 
