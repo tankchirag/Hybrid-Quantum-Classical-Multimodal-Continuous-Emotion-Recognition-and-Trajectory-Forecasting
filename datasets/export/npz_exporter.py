@@ -47,6 +47,7 @@ class NpzExporter:
         *,
         X: np.ndarray,
         y: np.ndarray,
+        label_history: np.ndarray,
         feature_names: list[str],
         target_names: list[str],
         subject_id: int,
@@ -70,6 +71,8 @@ class NpzExporter:
 
             X=X,
             y=y,
+            label_history=
+                label_history,
 
             feature_names=np.asarray(
                 feature_names,
@@ -126,12 +129,17 @@ class NpzExporter:
         required_keys = {
 
             "X",
+
             "y",
 
+            "label_history",
+
             "feature_names",
+
             "target_names",
 
             "subject_id",
+
             "video_id",
 
             "dataset_name",
@@ -139,13 +147,13 @@ class NpzExporter:
             "sampling_rate_hz",
 
             "history_steps",
+
             "forecast_steps",
 
             "preprocessing_version",
 
             "config_hash",
         }
-
         return required_keys.issubset(
             set(data.files)
         )

@@ -45,8 +45,24 @@ class CaseDataset(
             dataset_root
         )
 
-        self.split = (
-            split.lower()
+        split_aliases = {
+
+            "val": "validation",
+
+            "valid": "validation",
+
+            "validation": "validation",
+
+            "train": "train",
+
+            "test": "test",
+
+            "all": "all",
+        }
+
+        self.split = split_aliases.get(
+            split.lower(),
+            split.lower(),
         )
 
         self.samples_dir = (
@@ -214,9 +230,16 @@ class CaseDataset(
             "y":
                 data["y"],
 
+            "label_history":
+                data["label_history"],
+
+            "target_names":
+                data["target_names"],
+
             "metadata":
                 metadata,
         }
+
 
     # ==================================================
     # Helpers

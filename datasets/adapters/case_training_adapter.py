@@ -29,6 +29,16 @@ class CaseTrainingAdapter:
         sample: dict,
     ) -> dict:
 
+        label_history = torch.tensor(
+            sample["label_history"],
+            dtype=torch.float32,
+        )
+
+        target_names = sample.get(
+            "target_names",
+            None,
+        )
+
         X = torch.tensor(
             sample["X"],
             dtype=torch.float32,
@@ -39,6 +49,7 @@ class CaseTrainingAdapter:
             dtype=torch.float32,
         )
 
+
         metadata = sample.get(
             "metadata",
             {},
@@ -48,23 +59,64 @@ class CaseTrainingAdapter:
         # CASE labels
         # ----------------------------------
 
-        valence_future = y[:, :, 0]
+        # ----------------------------------
+        # Forecast targets
+        # ----------------------------------
 
-        arousal_future = y[:, :, 1]
+        valence_future = y[:, 0]
 
-        valence_now = y[:, 0, 0]
+        arousal_future = y[:, 1]
 
-        arousal_now = y[:, 0, 1]
+        # ----------------------------------
+        # Recognition targets
+        # ----------------------------------
+
+        valence_now = y[0, 0]
+
+        arousal_now = y[0, 1]
+
+        continuous_labels = {}
+
+        if target_names is not None:
+
+            for idx, name in enumerate(
+                target_names
+            ):
+
+                continuous_labels[
+                    str(name)
+                ] = label_history[:, idx]
 
         return {
-
             "modalities": {
 
-                "physiology":
-                    X,
+                "ecg":
+                    X[:, 0:1],
+
+                "bvp":
+                    X[:, 1:2],
+
+                "gsr":
+                    X[:, 2:3],
+
+                "rsp":
+                    X[:, 3:4],
+
+                "skt":
+                    X[:, 4:5],
+
+                "emg_zygo":
+                    X[:, 5:6],
+
+                "emg_coru":
+                    X[:, 6:7],
+
+                "emg_trap":
+                    X[:, 7:8],
             },
 
-            "continuous_labels": {},
+            "continuous_labels":
+                continuous_labels,
 
             "discrete_labels": {},
 

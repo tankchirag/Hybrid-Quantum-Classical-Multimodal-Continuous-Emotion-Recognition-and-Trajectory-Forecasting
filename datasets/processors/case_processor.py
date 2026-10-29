@@ -61,6 +61,8 @@ class ProcessedVideo:
 
     y: np.ndarray
 
+    label_history: np.ndarray
+
     feature_names: list[str]
 
     target_names: list[str]
@@ -243,6 +245,8 @@ class CaseProcessor(
             )
         )
 
+
+
         video_df = (
             dataframe[
                 dataframe["video"]
@@ -266,11 +270,16 @@ class CaseProcessor(
             )
         )
 
+
+
         return ProcessedVideo(
 
             X=contract.X,
 
             y=contract.y,
+
+            label_history=
+            contract.label_history,
 
             feature_names=
             contract.feature_names,

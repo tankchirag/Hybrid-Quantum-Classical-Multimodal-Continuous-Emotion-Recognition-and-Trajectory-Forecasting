@@ -126,6 +126,8 @@ class CaseHarmonizer:
         physiology_df: pd.DataFrame,
     ) -> pd.DataFrame:
 
+
+
         source_time = (
             physiology_df.iloc[:, 0]
             .to_numpy()
@@ -168,11 +170,14 @@ class CaseHarmonizer:
         # video labels
         #
 
+
+
+
         result["video"] = np.round(
             np.interp(
                 target_time,
                 source_time,
-                physiology_df["video"]
+                physiology_df[9]
                 .astype(float)
                 .to_numpy(),
             )

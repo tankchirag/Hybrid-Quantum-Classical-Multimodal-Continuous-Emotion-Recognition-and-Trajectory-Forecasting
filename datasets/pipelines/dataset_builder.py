@@ -45,11 +45,16 @@ class DatasetBuilder:
             / f"sub_{subject_id:02d}.npz"
         )
 
+
+
         self.exporter.save(
             output_file,
 
             X=artifact.X,
             y=artifact.y,
+
+            label_history=
+                artifact.label_history,
 
             feature_names=
             artifact.feature_names,

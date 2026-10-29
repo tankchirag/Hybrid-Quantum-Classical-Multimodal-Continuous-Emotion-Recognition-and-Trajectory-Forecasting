@@ -184,6 +184,21 @@ def main():
                     / filename
                 )
 
+                print(
+                    "X:",
+                    processed.X.shape
+                )
+
+                print(
+                    "label_history:",
+                    processed.label_history.shape
+                )
+
+                print(
+                    "Y:",
+                    processed.y.shape
+                )
+
                 np.savez_compressed(
 
                     output_path,
@@ -193,6 +208,15 @@ def main():
 
                     y=
                     processed.y,
+
+                    label_history=
+                    processed.label_history,
+
+                    target_names=
+                    np.asarray(
+                        processed.target_names,
+                        dtype=object,
+                    ),
 
                     metadata=
                     json.dumps(
@@ -276,12 +300,14 @@ def main():
 
             except Exception as ex:
 
+                import traceback
+
                 print(
                     f"  ❌ "
                     f"video {video_id}"
                 )
 
-                print(ex)
+                traceback.print_exc()
 
     manifest = (
         pd.DataFrame(

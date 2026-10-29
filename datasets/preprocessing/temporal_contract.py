@@ -70,15 +70,21 @@ class TemporalContractResult:
     """
 
     X: np.ndarray
+
     y: np.ndarray
 
+    label_history: np.ndarray
+
     feature_names: list[str]
+
     target_names: list[str]
 
     history_steps: int
+
     forecast_steps: int
 
     num_samples: int
+
 
 
 # ==========================================================
@@ -197,7 +203,10 @@ class TemporalContract:
         )
 
         X_list = []
+
         y_list = []
+
+        label_history_list = []
 
         max_start = (
             len(dataframe)
@@ -229,6 +238,13 @@ class TemporalContract:
                 ]
             )
 
+            label_history_window = (
+                targets[
+                    start_idx:
+                    history_end
+                ]
+            )
+
             y_window = (
                 targets[
                     history_end:
@@ -236,16 +252,26 @@ class TemporalContract:
                 ]
             )
 
-            X_list.append(
-                X_window
-            )
 
-            y_list.append(
-                y_window
-            )
+        X_list.append(
+            X_window
+        )
+
+        label_history_list.append(
+            label_history_window
+        )
+
+        y_list.append(
+            y_window
+        )
 
         X = np.asarray(
             X_list,
+            dtype=np.float32,
+        )
+
+        label_history = np.asarray(
+            label_history_list,
             dtype=np.float32,
         )
 
@@ -255,23 +281,28 @@ class TemporalContract:
         )
 
         return TemporalContractResult(
+
             X=X,
+
             y=y,
 
+            label_history=
+                label_history,
+
             feature_names=
-            feature_cols,
+                feature_cols,
 
             target_names=
-            target_cols,
+                target_cols,
 
             history_steps=
-            self.history_steps,
+                self.history_steps,
 
             forecast_steps=
-            self.forecast_steps,
+                self.forecast_steps,
 
             num_samples=
-            len(X),
+                len(X),
         )
 
     # ------------------------------------------------------

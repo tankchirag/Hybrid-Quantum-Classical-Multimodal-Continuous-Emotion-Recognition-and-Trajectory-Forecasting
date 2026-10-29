@@ -548,14 +548,27 @@ class BaselineB1(nn.Module):
         # Tokenizer
         # ==================================================
 
+        if isinstance(
+            self.modalities,
+            dict,
+        ):
+            token_order = list(
+                self.modalities.keys()
+            )
+
+        else:
+            token_order = list(
+                vars(
+                    self.modalities
+                ).keys()
+            )
+
         self.tokenizer = Tokenizer(
             embedding_dim=
             self.embedding_dim,
 
             token_order=
-            list(
-                self.modalities.keys()
-            )
+            token_order,
         )
 
         # ==================================================
@@ -728,14 +741,30 @@ class BaselineB1(nn.Module):
 
         history_state = None
 
-        has_history = (
+        continuous_history = (
             batch.get(
-                "continuous_labels"
-            ) is not None
-            or
+                "continuous_labels",
+                {},
+            )
+        )
+
+        discrete_history = (
             batch.get(
-                "discrete_labels"
-            ) is not None
+                "discrete_labels",
+                {},
+            )
+        )
+
+        has_history = bool(
+            batch.get(
+                "continuous_labels",
+                {},
+            )
+        ) or bool(
+            batch.get(
+                "discrete_labels",
+                {},
+            )
         )
 
         if (
