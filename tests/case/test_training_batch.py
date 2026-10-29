@@ -63,11 +63,28 @@ def main():
     )
 
     print(
-        "history state shape:",
+        "history enabled:",
         outputs[
-            "history_state"
-        ].shape
+            "history_enabled"
+        ]
     )
+
+    if outputs[
+        "history_enabled"
+    ]:
+
+        print(
+            "history state shape:",
+            outputs[
+                "history_state"
+            ].shape
+        )
+
+    else:
+
+        print(
+            "history state: disabled"
+        )
 
     print()
 

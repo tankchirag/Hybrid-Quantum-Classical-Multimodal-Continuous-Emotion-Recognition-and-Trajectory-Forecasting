@@ -252,18 +252,17 @@ class TemporalContract:
                 ]
             )
 
+            X_list.append(
+                X_window
+            )
 
-        X_list.append(
-            X_window
-        )
+            label_history_list.append(
+                label_history_window
+            )
 
-        label_history_list.append(
-            label_history_window
-        )
-
-        y_list.append(
-            y_window
-        )
+            y_list.append(
+                y_window
+            )
 
         X = np.asarray(
             X_list,
