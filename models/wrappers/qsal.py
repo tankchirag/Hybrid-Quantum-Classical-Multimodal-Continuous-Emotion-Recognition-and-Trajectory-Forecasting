@@ -342,11 +342,52 @@ class QSAL(nn.Module):
             None,
         )
 
-        self.forecast_horizon = getattr(
-            config.forecasting,
-            "horizon",
-            25,
+        # ==================================================
+        # Forecast Horizon
+        # ==================================================
+
+        forecast_cfg = getattr(
+            config,
+            "forecasting",
+            None,
         )
+
+        if isinstance(
+            forecast_cfg,
+            dict,
+        ):
+
+            self.forecast_horizon = int(
+                forecast_cfg.get(
+                    "horizon",
+                    25,
+                )
+            )
+
+        elif (
+            forecast_cfg is not None
+            and
+            hasattr(
+                forecast_cfg,
+                "horizon",
+            )
+        ):
+
+            self.forecast_horizon = int(
+                forecast_cfg.horizon
+            )
+
+        else:
+
+            self.forecast_horizon = getattr(
+                config,
+                "forecast_horizon",
+                25,
+            )
+
+        # ==================================================
+        # History Configuration
+        # ==================================================
 
         self.history_dim = getattr(
             config,
@@ -357,6 +398,22 @@ class QSAL(nn.Module):
         self.history_ratio = None
 
         history_cfg = None
+
+        # ----------------------------------
+        # Safe defaults
+        # ----------------------------------
+
+        history_hidden_dim = None
+
+        history_ratio = 4
+
+        history_auto_scale = True
+
+        history_num_layers = 2
+
+        history_dropout = 0.20
+
+        history_max_continuous_labels = 16
 
         if isinstance(
             config,
@@ -386,24 +443,41 @@ class QSAL(nn.Module):
                         False,
                     )
                 )
+
                 history_hidden_dim = history_cfg.get(
                     "hidden_dim",
                     None,
                 )
+
+                history_ratio = history_cfg.get(
+                    "ratio",
+                    4,
+                )
+
+                self.history_ratio = history_ratio
+
+                history_auto_scale = history_cfg.get(
+                    "auto_scale",
+                    True,
+                )
+
                 history_num_layers = history_cfg.get(
                     "num_layers",
                     2,
                 )
+
                 history_dropout = history_cfg.get(
                     "history_dropout",
                     0.20,
                 )
+
                 history_max_continuous_labels = (
                     history_cfg.get(
                         "max_continuous_labels",
                         16,
                     )
                 )
+
             else:
                 self.history_enabled = bool(
                     getattr(
@@ -541,6 +615,7 @@ class QSAL(nn.Module):
             self.history_representation = None
             self.history_encoder = None
             self.history_injection = None
+
 
         # ==================================================
         # Feature Extractors
