@@ -1,5 +1,27 @@
 # Phase 1: CASE Detailed Pipeline Specification
 
+> Implementation Status Note
+>
+> This document describes the original Phase 1 CASE design and
+> intended implementation plan.
+>
+> During actual development several engineering adaptations were
+> required to align the CASE dataset with the framework's universal
+> training pipeline, history subsystem, forecasting subsystem,
+> configuration system, and quantum model implementations.
+>
+> Therefore this document should be interpreted as the original
+> architectural specification rather than the final implementation
+> record.
+>
+> The authoritative record of what was actually implemented,
+> validated, benchmarked and deployed is:
+>
+> docs/phase1_case_completion_report.md
+>
+> Any discrepancies between this specification and implementation
+> should be resolved in favor of the completion report.
+
 ## Phase 1 — Visceral Domain Pipeline (CASE)
 
 ```text
@@ -246,6 +268,158 @@ Running this pipeline produces the following empirical benchmark table for your 
 | M9 | QSAL Ablation | Quantum Attn | 4 | Off (0) | eval | eval | eval | eval | eval | eval |
 | M10 | QSAL Ablation | Quantum Attn | 4 | 8:1 (32) | eval | eval | eval | eval | eval | eval |
 | M11 | QSAL Ablation | Quantum Attn | 4 | 2:1 (128) | eval | eval | eval | eval | eval | eval |
+
+# Phase 1 Implementation Deviations and Engineering Notes
+
+The final implementation remained faithful to the
+scientific objectives of Phase 1 while introducing
+several engineering adaptations based on actual
+dataset characteristics and framework requirements.
+
+## Major Differences
+
+### Temporal Configuration
+
+Original Design
+
+T = 10
+K = 10
+H = 10
+
+Final CASE Integration
+
+Observation Length = 120
+
+History Length = 120
+
+Forecast Horizon = 20
+
+Reason:
+
+The framework's final continuous forecasting setup
+uses longer observation histories and a 10 second
+future prediction horizon.
+
+---
+
+### Dataset Contracts
+
+Original Design
+
+Dedicated CASE-specific batch format.
+
+Final Implementation
+
+Unified framework contract shared across:
+
+- CASE
+- Synthetic TSST
+- Future OMG integration
+
+Reason:
+
+Allows all architectures to train without
+dataset-specific model code.
+
+---
+
+### History Subsystem
+
+Original Design
+
+Conceptual History-Aware State Conditioning.
+
+Final Implementation
+
+Operational pipeline:
+
+HistoryAdapter
+    ->
+HistoryRepresentation
+    ->
+HistoryEncoder
+    ->
+HistoryInjection
+
+validated for:
+
+- B1
+- B2
+- B3
+- QSAL
+
+---
+
+### Forecasting
+
+Original Design
+
+Single planning horizon description.
+
+Final Implementation
+
+Unified forecasting subsystem:
+
+Recognition Head
+
+Forecasting Head
+
+Transformer Encoder-Decoder
+
+shared by all architectures.
+
+---
+
+### Quantum Models
+
+Original Design
+
+Conceptual benchmark plan for B3 and QSAL.
+
+Final Implementation
+
+Working implementations:
+
+- Baseline B3
+- QSAL
+
+validated through:
+
+Forward Pass
+Loss
+Backward
+Training
+
+under CASE.
+
+---
+
+### Integration Outcome
+
+Successfully validated:
+
+✅ Baseline B1
+
+✅ Baseline B2
+
+✅ Baseline B3
+
+✅ QSAL
+
+using:
+
+✅ CASE Dataset
+
+✅ History Conditioning
+
+✅ Forecasting
+
+✅ End-to-End Training
+
+See:
+
+docs/phase1_case_completion_report.md
+
 ### Git Branch & Workspace Discipline
 Following your project convention, keep the integration branch clean[cite: 30]:
 1. Current working branch: synthetic-multimodal-framework (contains the verified baseline and synthetic TSST code)[cite: 30].
