@@ -64,6 +64,10 @@ import torch
 
 from tqdm import tqdm
 
+import pandas as pd
+
+import json
+
 from training.losses import (
     UnifiedMultiTaskLoss,
 )
@@ -392,6 +396,8 @@ class Trainer:
                 total_fore / num_batches,
         }
 
+
+
     # ======================================================
     # Validation
     # ======================================================
@@ -524,9 +530,11 @@ class Trainer:
 
             if self.save_path is not None:
 
-                torch.save(
-                    self.model.state_dict(),
-                    self.save_path,
+                self.save_checkpoint(
+                    path=self.save_path,
+                    epoch=epoch,
+                    train_loss=None,
+                    val_loss=avg_loss,
                 )
 
         else:
@@ -553,6 +561,104 @@ class Trainer:
             "metrics":
                 collected_metrics,
         }
+
+    # ======================================================
+    # save checkpoint
+    # ======================================================
+
+    def save_checkpoint(
+        self,
+        path,
+        epoch,
+        train_loss,
+        val_loss,
+    ):
+
+        checkpoint = {
+
+            "epoch":
+                epoch,
+
+            "best_val_loss":
+                self.best_val_loss,
+
+            "train_loss":
+                train_loss,
+
+            "val_loss":
+                val_loss,
+
+            "model_state_dict":
+                self.model.state_dict(),
+
+            "optimizer_state_dict":
+                self.optimizer.state_dict(),
+
+            "scheduler_state_dict":
+                (
+                    self.scheduler.state_dict()
+                    if self.scheduler
+                    is not None
+                    else None
+                ),
+        }
+
+        torch.save(
+            checkpoint,
+            path,
+        )
+
+    # ======================================================
+    # load_checkpoint
+    # ======================================================
+
+ 
+    def load_checkpoint(
+        self,
+        path,
+    ):
+
+        checkpoint = torch.load(
+            path,
+            map_location=self.device,
+        )
+
+        self.model.load_state_dict(
+            checkpoint[
+                "model_state_dict"
+            ]
+        )
+
+        self.optimizer.load_state_dict(
+            checkpoint[
+                "optimizer_state_dict"
+            ]
+        )
+
+        if (
+            self.scheduler is not None
+            and
+            checkpoint[
+                "scheduler_state_dict"
+            ]
+            is not None
+        ):
+            self.scheduler.load_state_dict(
+                checkpoint[
+                    "scheduler_state_dict"
+                ]
+            )
+
+        self.best_val_loss = (
+            checkpoint[
+                "best_val_loss"
+            ]
+        )
+
+        return checkpoint[
+            "epoch"
+        ]
+
 
     # ======================================================
     # Early Stop Flag
@@ -603,6 +709,23 @@ class Trainer:
                 )
             )
 
+            if self.save_path:
+
+                last_path = (
+                    self.save_path
+                    .replace(
+                        "best.pt",
+                        "last.pt",
+                    )
+                )
+
+                self.save_checkpoint(
+                    path=last_path,
+                    epoch=epoch,
+                    train_loss=train_stats["loss"],
+                    val_loss=val_stats["loss"],
+                )
+
             history.append({
 
                 "epoch":
@@ -633,4 +756,43 @@ class Trainer:
 
                 break
 
+
+            history_path = (
+                self.save_path
+                .replace(
+                    "best.pt",
+                    "history.json",
+                )
+            )
+
+            with open(
+                history_path,
+                "w",
+            ) as f:
+
+                json.dump(
+                    history,
+                    f,
+                    indent=4,
+                )
+
+
+
+            metrics_path = (
+                self.save_path
+                .replace(
+                    "best.pt",
+                    "metrics.csv",
+                )
+            )
+
+            pd.DataFrame(
+                history
+            ).to_csv(
+                metrics_path,
+                index=False,
+            )
+
         return history
+
+ 

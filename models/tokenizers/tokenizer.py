@@ -158,21 +158,16 @@ class Tokenizer(
             embedding_dim
         )
 
-        self.token_order = (
-            token_order
-            or self.DEFAULT_TOKEN_ORDER
-        )
+        self.token_order = token_order
 
         # ----------------------------------
         # Token-Type Embeddings
         # ----------------------------------
 
         self.token_type_embeddings = (
-            nn.Parameter(
-                torch.randn(
-                    len(self.token_order),
-                    embedding_dim,
-                )
+            nn.Embedding(
+                256,
+                embedding_dim,
             )
         )
 
@@ -230,8 +225,16 @@ class Tokenizer(
 
         token_list = []
 
-        for idx, token_name in enumerate(
+        active_tokens = (
             self.token_order
+            if self.token_order is not None
+            else sorted(
+                embedding_dict.keys()
+            )
+        )
+
+        for idx, token_name in enumerate(
+            active_tokens
         ):
 
             emb = (
@@ -253,9 +256,12 @@ class Tokenizer(
             )
 
             type_embedding = (
-                self.token_type_embeddings[
-                    idx
-                ]
+                self.token_type_embeddings(
+                    torch.tensor(
+                        idx,
+                        device=emb.device,
+                    )
+                )
                 .view(
                     1,
                     1,

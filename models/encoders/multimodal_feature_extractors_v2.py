@@ -51,6 +51,10 @@ from .bpm_encoder import BPMEncoder
 
 from .eye_encoder import EyeEncoder
 
+from .encoder_registry import (
+    get_encoder_class,
+)
+
 
 class MultimodalFeatureExtractorsV2(
     nn.Module,
@@ -169,69 +173,38 @@ class MultimodalFeatureExtractorsV2(
     ):
         """
         Dynamically create enabled
-        modality encoders.
+        modality encoders using
+        the central registry.
         """
 
-        # ----------------------------------
-        # Physiological
-        # ----------------------------------
+        for (
+            modality_name,
+            enabled,
+        ) in self.modalities.items():
 
-        if self.modalities.get(
-            "ecg",
-            False,
-        ):
-            self.encoders["ecg"] = (
-                ECGEncoder(
-                    self.embedding_dim
+            if not enabled:
+                continue
+
+            encoder_cls = (
+                get_encoder_class(
+                    modality_name
                 )
             )
 
-        if self.modalities.get(
-            "eda",
-            False,
-        ):
-            self.encoders["eda"] = (
-                EDAEncoder(
-                    self.embedding_dim
-                )
-            )
+            if encoder_cls is None:
 
-        if self.modalities.get(
-            "eeg",
-            False,
-        ):
-            self.encoders["eeg"] = (
-                EEGEncoder(
-                    self.embedding_dim
+                print(
+                    "[EncoderRegistry] "
+                    f"No encoder registered "
+                    f"for '{modality_name}'"
                 )
-            )
 
-        if self.modalities.get(
-            "emg",
-            False,
-        ):
-            self.encoders["emg"] = (
-                EMGEncoder(
-                    self.embedding_dim
-                )
-            )
+                continue
 
-        if self.modalities.get(
-            "resp",
-            False,
-        ):
-            self.encoders["resp"] = (
-                RESPEncoder(
-                    self.embedding_dim
-                )
-            )
-
-        if self.modalities.get(
-            "bpm",
-            False,
-        ):
-            self.encoders["bpm"] = (
-                BPMEncoder(
+            self.encoders[
+                modality_name
+            ] = (
+                encoder_cls(
                     self.embedding_dim
                 )
             )

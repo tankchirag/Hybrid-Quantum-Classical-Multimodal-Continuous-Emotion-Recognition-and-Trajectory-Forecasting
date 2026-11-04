@@ -60,7 +60,7 @@
 
 **Theory:** (B,T,Q)
 
-**Runtime:** (1, 50, 6)
+**Runtime:** (1, 50, 4)
 
 **Status:** PASS
 
@@ -84,7 +84,7 @@
 
 **Theory:** Recognition Outputs
 
-**Runtime:** {'continuous': {'valence': (1,), 'arousal': (1,), 'dominance': (1,), 'stress': (1,), 'workload': (1,), 'fatigue': (1,)}, 'discrete': {}}
+**Runtime:** {'continuous': {'valence': (1,), 'arousal': (1,), 'dominance': (1,), 'stress': (1,), 'workload': (1,), 'fatigue': (1,)}, 'discrete': {'emotion_class': (1, 6), 'stress_class': (1, 3), 'workload_class': (1, 3), 'alertness_class': (1, 3), 'drowsiness_class': (1, 4), 'kss_score': (1, 9)}}
 
 **Status:** PASS
 
@@ -92,6 +92,6 @@
 
 **Theory:** Forecast Outputs
 
-**Runtime:** {'continuous': {'valence': (1, 25), 'arousal': (1, 25), 'dominance': (1, 25), 'stress': (1, 25), 'workload': (1, 25), 'fatigue': (1, 25)}, 'discrete': {}}
+**Runtime:** {'continuous': {'valence': (1, 25), 'arousal': (1, 25), 'dominance': (1, 25), 'stress': (1, 25), 'workload': (1, 25), 'fatigue': (1, 25)}, 'discrete': {'emotion_class': (1, 25, 6), 'stress_class': (1, 25, 3), 'workload_class': (1, 25, 3), 'alertness_class': (1, 25, 3), 'drowsiness_class': (1, 25, 4), 'kss_score': (1, 25, 9)}}
 
 **Status:** PASS

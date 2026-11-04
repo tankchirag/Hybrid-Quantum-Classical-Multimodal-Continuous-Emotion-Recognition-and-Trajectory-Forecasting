@@ -1,13 +1,13 @@
 # BaselineB3 Architecture Audit
 
-Generated: 2026-10-08 19:58:40.066394
+Generated: 2026-10-25 21:12:11.376157
 
 ## Configuration
 
 - **History Length**: 50
 - **Forecast Horizon**: 25
-- **Qubits**: 6
-- **Circuit Depth**: 4
+- **Qubits**: 4
+- **Circuit Depth**: 3
 - **Transformer Dimension**: 256
 - **Backend**: lightning.qubit
 
@@ -158,9 +158,9 @@ Generated: 2026-10-08 19:58:40.066394
 
 ### UnifiedPQC
 
-**Input:** `[(1, 50, 6)]`
+**Input:** `[(1, 50, 4)]`
 
-**Output:** `(1, 50, 6)`
+**Output:** `(1, 50, 4)`
 
 **Purpose:** Runtime module execution
 
@@ -196,7 +196,7 @@ Generated: 2026-10-08 19:58:40.066394
 
 **Input:** `[(1, 50, 256)]`
 
-**Output:** `{'continuous': {'valence': (1,), 'arousal': (1,), 'dominance': (1,), 'stress': (1,), 'workload': (1,), 'fatigue': (1,)}, 'discrete': {}}`
+**Output:** `{'continuous': {'valence': (1,), 'arousal': (1,), 'dominance': (1,), 'stress': (1,), 'workload': (1,), 'fatigue': (1,)}, 'discrete': {'emotion_class': (1, 6), 'stress_class': (1, 3), 'workload_class': (1, 3), 'alertness_class': (1, 3), 'drowsiness_class': (1, 4), 'kss_score': (1, 9)}}`
 
 **Purpose:** Runtime module execution
 
@@ -208,7 +208,7 @@ Generated: 2026-10-08 19:58:40.066394
 
 **Input:** `[(1, 25, 256)]`
 
-**Output:** `{'continuous': {'valence': (1, 25), 'arousal': (1, 25), 'dominance': (1, 25), 'stress': (1, 25), 'workload': (1, 25), 'fatigue': (1, 25)}, 'discrete': {}}`
+**Output:** `{'continuous': {'valence': (1, 25), 'arousal': (1, 25), 'dominance': (1, 25), 'stress': (1, 25), 'workload': (1, 25), 'fatigue': (1, 25)}, 'discrete': {'emotion_class': (1, 25, 6), 'stress_class': (1, 25, 3), 'workload_class': (1, 25, 3), 'alertness_class': (1, 25, 3), 'drowsiness_class': (1, 25, 4), 'kss_score': (1, 25, 9)}}`
 
 **Purpose:** Runtime module execution
 

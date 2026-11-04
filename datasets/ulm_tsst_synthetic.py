@@ -336,8 +336,8 @@ class SyntheticULMTSSTDataset(
 
     def _save_sample(
         self,
-        sample: Dict[str, Any],
-        meta: Dict[str, Any],
+        sample,
+        meta,
     ) -> None:
 
         if self.save_dir is None:
@@ -354,15 +354,52 @@ class SyntheticULMTSSTDataset(
 
         np_dict = {}
 
+        # ----------------------------------
+        # Metadata
+        # ----------------------------------
+
+        np_dict["meta_clip_id"] = np.asarray(
+            meta["clip_id"],
+            dtype=np.int32,
+        )
+
+        np_dict["meta_subject_id"] = np.asarray(
+            meta["subject_id"],
+            dtype=np.int32,
+        )
+
+        np_dict["meta_session_id"] = np.asarray(
+            meta["session_id"],
+            dtype=np.int32,
+        )
+
+        np_dict[
+            "meta_duration_seconds"
+        ] = np.asarray(
+            meta["duration_seconds"],
+            dtype=np.int32,
+        )
+
+        # ----------------------------------
+        # Modalities
+        # ----------------------------------
+
         for name, tensor in (
-            sample[
-                "modalities"
-            ].items()
+            sample["modalities"]
+            .items()
         ):
 
             np_dict[
                 f"mod_{name}"
-            ] = tensor.cpu().numpy()
+            ] = (
+                tensor
+                .cpu()
+                .numpy()
+            )
+
+        # ----------------------------------
+        # Continuous Labels
+        # ----------------------------------
 
         for name, tensor in (
             sample[
@@ -372,7 +409,15 @@ class SyntheticULMTSSTDataset(
 
             np_dict[
                 f"cont_{name}"
-            ] = tensor.cpu().numpy()
+            ] = (
+                tensor
+                .cpu()
+                .numpy()
+            )
+
+        # ----------------------------------
+        # Discrete Labels
+        # ----------------------------------
 
         for name, tensor in (
             sample[
@@ -382,12 +427,19 @@ class SyntheticULMTSSTDataset(
 
             np_dict[
                 f"disc_{name}"
-            ] = tensor.cpu().numpy()
+            ] = (
+                tensor
+                .cpu()
+                .numpy()
+            )
 
-        np.savez(
+        np.savez_compressed(
+
             path,
+
             **np_dict,
         )
+
 
     # ==================================================
     # Length

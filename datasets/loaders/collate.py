@@ -72,6 +72,23 @@ from typing import List
 import torch
 
 
+def get_field(
+    sample,
+    field,
+):
+    if isinstance(
+        sample,
+        dict,
+    ):
+        return sample[field]
+
+    return getattr(
+        sample,
+        field,
+    )
+
+
+
 # ==========================================================
 # Tensor Dictionary Stacking
 # ==========================================================
@@ -218,10 +235,12 @@ def collate(
         _stack_tensor_dictionaries(
 
             [
-                sample.modalities
-
-                for sample
-                in batch
+                (
+                    sample["modalities"]
+                    if isinstance(sample, dict)
+                    else sample.modalities
+                )
+                for sample in batch
             ]
         )
     )
@@ -231,10 +250,12 @@ def collate(
         _stack_tensor_dictionaries(
 
             [
-                sample.continuous_labels
-
-                for sample
-                in batch
+                (
+                    sample["continuous_labels"]
+                    if isinstance(sample, dict)
+                    else sample.continuous_labels
+                )
+                for sample in batch
             ]
         )
     )
@@ -244,10 +265,12 @@ def collate(
         _stack_tensor_dictionaries(
 
             [
-                sample.discrete_labels
-
-                for sample
-                in batch
+                (
+                    sample["discrete_labels"]
+                    if isinstance(sample, dict)
+                    else sample.discrete_labels
+                )
+                for sample in batch
             ]
         )
     )
@@ -261,11 +284,12 @@ def collate(
         _stack_nested_targets(
 
             [
-                sample
-                .recognition_targets
-
-                for sample
-                in batch
+                (
+                    sample["recognition_targets"]
+                    if isinstance(sample, dict)
+                    else sample.recognition_targets
+                )
+                for sample in batch
             ]
         )
     )
@@ -275,11 +299,12 @@ def collate(
         _stack_nested_targets(
 
             [
-                sample
-                .forecast_targets
-
-                for sample
-                in batch
+                (
+                    sample["forecast_targets"]
+                    if isinstance(sample, dict)
+                    else sample.forecast_targets
+                )
+                for sample in batch
             ]
         )
     )
@@ -290,10 +315,13 @@ def collate(
 
     metadata = [
 
-        sample.metadata
+        (
+            sample["metadata"]
+            if isinstance(sample, dict)
+            else sample.metadata
+        )
 
-        for sample
-        in batch
+        for sample in batch
     ]
 
     # ------------------------------------------------------

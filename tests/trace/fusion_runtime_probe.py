@@ -36,7 +36,7 @@ if str(PROJECT_ROOT) not in sys.path:
     )
 
 from utils.config import load_config
-from models.wrappers.qsal import QSAL
+from models.wrappers.qsal_half import QSAL
 from training.base_training_script import (
     build_dataset,
     to_namespace,

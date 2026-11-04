@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hybrid-qemotion"
+version = "0.1.0"
+description = "Hybrid Quantum Classical Multimodal Emotion Recognition and Forecasting"
+requires-python = ">=3.10"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["configs*", "datasets*", "models*", "evaluation*", "training*", "utils*"]

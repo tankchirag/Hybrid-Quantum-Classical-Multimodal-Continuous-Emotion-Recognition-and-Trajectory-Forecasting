@@ -1,0 +1,281 @@
+# ==========================================================
+# CASE QSAL
+# Quantum Self-Attention Learning
+# CASE Configuration
+# ==========================================================
+
+experiment:
+
+  name: "qsal"
+
+  description: >
+    Quantum Self-Attention Learning framework for
+    multimodal affective computing, recognition,
+    forecasting, temporal modelling, and future
+    state prediction.
+
+# ==========================================================
+# Dataset
+# ==========================================================
+
+dataset:
+
+  name: "case"
+
+  type: "disk"
+
+  config_path: "configs/datasets/case.yaml"
+
+  root_dir: "D:/Datasets/CASE/processed"
+
+  train_split: "train"
+
+  val_split: "val"
+
+  test_split: "test"
+
+  discrete_cardinalities: {}
+
+# ==========================================================
+# CASE Modalities
+# ==========================================================
+
+modalities:
+
+  ecg: true
+
+  bvp: true
+
+  gsr: true
+
+  rsp: true
+
+  skt: true
+
+  emg_zygo: true
+
+  emg_coru: true
+
+  emg_trap: true
+
+# ==========================================================
+# Continuous Labels
+# ==========================================================
+
+continuous_labels:
+
+  - valence
+
+  - arousal
+
+# ==========================================================
+# Discrete Labels
+# ==========================================================
+
+discrete_labels: []
+
+# ==========================================================
+# Recognition
+# ==========================================================
+
+recognition:
+
+  enabled: true
+
+# ==========================================================
+# Forecasting
+# ==========================================================
+
+forecasting:
+
+  enabled: true
+
+  horizon: 20
+
+  forecast_horizon: 20
+
+# ==========================================================
+# History
+# ==========================================================
+
+history:
+
+  enabled: true
+
+  history_length: 120
+
+  use_continuous_history: true
+
+  use_discrete_history: false
+
+  source: "ground_truth"
+
+  future_inference_source: "prediction"
+
+# ==========================================================
+# History Encoder
+# ==========================================================
+
+history_encoder:
+
+  enabled: true
+
+  type: "gru"
+
+  auto_scale: true
+
+  ratio: 4
+
+  hidden_dim: null
+
+  num_layers: 2
+
+  history_dropout: 0.20
+
+  injection_point: "post_fusion"
+
+# ==========================================================
+# QSAL Model
+# ==========================================================
+
+model:
+
+  name: "qsal"
+
+  emb_dim: 128
+
+  proj_dim: 64
+
+  transformer_dim: 256
+
+  num_heads: 4
+
+  num_layers: 4
+
+  dropout: 0.1
+
+# ==========================================================
+# Quantum Self-Attention
+# ==========================================================
+
+qsal:
+
+  enabled: true
+
+  num_qubits: 4
+
+  circuit_depth: 3
+
+  fusion_dim: 256
+
+  num_heads: 4
+
+  backend: "lightning.qubit"
+
+  encoding: "angle"
+
+  entanglement: "strong"
+
+  shots: null
+
+
+# ==========================================================
+# Recognition Head
+# ==========================================================
+
+recognition_head:
+
+  enabled: true
+
+# ==========================================================
+# Forecast Head
+# ==========================================================
+
+forecast_head:
+
+  enabled: true
+
+# ==========================================================
+# Training
+# ==========================================================
+
+training:
+
+  batch_size: 8
+
+  epochs: 2
+
+  patience: 10
+
+  gradient_clip: 1.0
+
+  max_train_batches: 2
+
+  max_val_batches: 2
+
+# ==========================================================
+# Optimizer
+# ==========================================================
+
+optimizer:
+
+  name: "adamw"
+
+  lr: 0.0003
+
+  weight_decay: 0.00001
+
+# ==========================================================
+# Scheduler
+# ==========================================================
+
+scheduler:
+
+  name: "reduce_on_plateau"
+
+  factor: 0.5
+
+  patience: 3
+
+  min_lr: 0.000001
+
+# ==========================================================
+# Loss
+# ==========================================================
+
+loss:
+
+  alpha: 0.2
+
+  recognition_weight: 1.0
+
+  forecast_weight: 1.0
+
+
+# ==========================================================
+# Runtime
+# ==========================================================
+
+runtime:
+
+  device: "auto"
+
+  deterministic: true
+
+  seed: 42
+
+# ==========================================================
+# Logging
+# ==========================================================
+
+logging:
+
+  run_dir: "runs/case_qsal"
+
+  save_best_only: true
+
+  save_history: true
+
+  save_config: true
+
+  log_interval: 20

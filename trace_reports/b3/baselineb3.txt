@@ -6,8 +6,8 @@ CONFIGURATION
 --------------------------------------------------------------------------------
 History Length: 50
 Forecast Horizon: 25
-Qubits: 6
-Circuit Depth: 4
+Qubits: 4
+Circuit Depth: 3
 Transformer Dimension: 256
 Backend: lightning.qubit
 
@@ -102,8 +102,8 @@ STATUS   : PASS
 --------------------------------------------------------------------------------
 STAGE    : Runtime
 MODULE   : UnifiedPQC
-INPUT    : [(1, 50, 6)]
-OUTPUT   : (1, 50, 6)
+INPUT    : [(1, 50, 4)]
+OUTPUT   : (1, 50, 4)
 PURPOSE  : Runtime module execution
 STATUS   : PASS
 
@@ -127,7 +127,7 @@ STATUS   : PASS
 STAGE    : Runtime
 MODULE   : RecognitionHead
 INPUT    : [(1, 50, 256)]
-OUTPUT   : {'continuous': {'valence': (1,), 'arousal': (1,), 'dominance': (1,), 'stress': (1,), 'workload': (1,), 'fatigue': (1,)}, 'discrete': {}}
+OUTPUT   : {'continuous': {'valence': (1,), 'arousal': (1,), 'dominance': (1,), 'stress': (1,), 'workload': (1,), 'fatigue': (1,)}, 'discrete': {'emotion_class': (1, 6), 'stress_class': (1, 3), 'workload_class': (1, 3), 'alertness_class': (1, 3), 'drowsiness_class': (1, 4), 'kss_score': (1, 9)}}
 PURPOSE  : Runtime module execution
 STATUS   : PASS
 
@@ -135,7 +135,7 @@ STATUS   : PASS
 STAGE    : Runtime
 MODULE   : ForecastingHead
 INPUT    : [(1, 25, 256)]
-OUTPUT   : {'continuous': {'valence': (1, 25), 'arousal': (1, 25), 'dominance': (1, 25), 'stress': (1, 25), 'workload': (1, 25), 'fatigue': (1, 25)}, 'discrete': {}}
+OUTPUT   : {'continuous': {'valence': (1, 25), 'arousal': (1, 25), 'dominance': (1, 25), 'stress': (1, 25), 'workload': (1, 25), 'fatigue': (1, 25)}, 'discrete': {'emotion_class': (1, 25, 6), 'stress_class': (1, 25, 3), 'workload_class': (1, 25, 3), 'alertness_class': (1, 25, 3), 'drowsiness_class': (1, 25, 4), 'kss_score': (1, 25, 9)}}
 PURPOSE  : Runtime module execution
 STATUS   : PASS
 

@@ -76,7 +76,7 @@ from models.wrappers.baseline_b3 import (
     BaselineB3,
 )
 
-from models.wrappers.qsal import (
+from models.wrappers.qsal_half import (
     QSAL,
 )
 

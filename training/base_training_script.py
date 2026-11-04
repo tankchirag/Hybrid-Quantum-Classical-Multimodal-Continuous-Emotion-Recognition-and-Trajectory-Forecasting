@@ -101,6 +101,11 @@ from utils.seed import (
     print_seed_report,
 )
 
+from datasets.wrappers.case_training_dataset import (
+    CaseTrainingDataset,
+)
+
+
 # ==========================================================
 # Config Object
 # ==========================================================
@@ -320,6 +325,32 @@ def build_dataset(
     split,
 ):
 
+    dataset_name = str(
+        getattr(
+            config.dataset,
+            "name",
+            "",
+        )
+    ).lower()
+
+    # ----------------------------------
+    # CASE
+    # ----------------------------------
+
+    if dataset_name == "case":
+
+        return CaseTrainingDataset(
+
+            dataset_root=
+            config.dataset.root_dir,
+
+            split=split,
+        )
+
+    # ----------------------------------
+    # Default
+    # ----------------------------------
+
     dataset = (
         ULMTSSTDiskDataset(
 
@@ -492,6 +523,12 @@ def run_training(
         f"[INFO] Device={device}"
     )
 
+    print()
+    print("DATASET NAME")
+    print(
+        config.dataset.name
+    )
+
     run_dir = create_run_dir(
         run_dir_name
     )
@@ -576,7 +613,7 @@ def run_training(
         save_path=
         os.path.join(
             run_dir,
-            "best_model.pt",
+            "best.pt",
         ),
 
         use_tqdm=True,
@@ -597,6 +634,27 @@ def run_training(
             None,
         ),
     )
+
+    last_checkpoint = os.path.join(
+        run_dir,
+        "last.pt",
+    )
+
+    if os.path.exists(
+        last_checkpoint
+    ):
+
+        start_epoch = (
+            trainer.load_checkpoint(
+                last_checkpoint
+            )
+        )
+
+        print(
+            f"Loaded checkpoint "
+            f"from epoch "
+            f"{start_epoch}"
+        )
 
     history = trainer.fit(
 
