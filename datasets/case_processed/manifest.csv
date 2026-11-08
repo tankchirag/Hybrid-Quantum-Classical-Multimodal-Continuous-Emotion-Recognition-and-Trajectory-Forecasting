@@ -1,0 +1,241 @@
+subject_id,sex,age_group,sequence_id,video_id,video_name,video_category,duration_ms,source_movie,source_url,notes,file,windows,targets
+1,F,30-34,1,1,amusing-1,amusing,185583.333,Hangover (2009),https://www.imdb.com/title/tt1119646/?ref_=nv_sr_1,,sub_01_vid_01.npz,232,232
+1,F,30-34,1,2,amusing-2,amusing,173083.333,When Harry Met Sally (1989),https://www.imdb.com/title/tt0098635/?ref_=nv_sr_1,,sub_01_vid_02.npz,207,207
+1,F,30-34,1,3,boring-1,boring,118666.667,Europe Travel Skills (2013),https://www.youtube.com/watch?v=qUHLCobRgaE,,sub_01_vid_03.npz,98,98
+1,F,30-34,1,4,boring-2,boring,160125.0,Matcha: The way of Tea (2012),https://www.youtube.com/watch?v=IC8zogRPogQ,,sub_01_vid_04.npz,182,182
+1,F,30-34,1,5,relaxed-1,relaxed,145125.0,Relaxing Music with Beach (2011),https://www.youtube.com/watch?v=tnHlB8aQp3Y,,sub_01_vid_05.npz,151,151
+1,F,30-34,1,6,relaxed-2,relaxed,146750.0,Natural World: Zambezi (2012),https://www.imdb.com/title/tt2496558/?ref_=fn_tt_tt_1,,sub_01_vid_06.npz,154,154
+1,F,30-34,1,7,scary-1,scary,197000.0,Shutter (2004),https://www.imdb.com/title/tt0440803/?ref_=nv_sr_2,Clip 1 and 2 stitched. Clip 1 --  1st scene.  Clip 2 --  2nd scene.,sub_01_vid_07.npz,255,255
+1,F,30-34,1,8,scary-2,scary,143750.0,Mama (2008),https://www.imdb.com/title/tt1315885/,,sub_01_vid_08.npz,149,149
+2,F,25-29,2,1,amusing-1,amusing,185583.333,Hangover (2009),https://www.imdb.com/title/tt1119646/?ref_=nv_sr_1,,sub_02_vid_01.npz,232,232
+2,F,25-29,2,2,amusing-2,amusing,173083.333,When Harry Met Sally (1989),https://www.imdb.com/title/tt0098635/?ref_=nv_sr_1,,sub_02_vid_02.npz,207,207
+2,F,25-29,2,3,boring-1,boring,118666.667,Europe Travel Skills (2013),https://www.youtube.com/watch?v=qUHLCobRgaE,,sub_02_vid_03.npz,98,98
+2,F,25-29,2,4,boring-2,boring,160125.0,Matcha: The way of Tea (2012),https://www.youtube.com/watch?v=IC8zogRPogQ,,sub_02_vid_04.npz,181,181
+2,F,25-29,2,5,relaxed-1,relaxed,145125.0,Relaxing Music with Beach (2011),https://www.youtube.com/watch?v=tnHlB8aQp3Y,,sub_02_vid_05.npz,152,152
+2,F,25-29,2,6,relaxed-2,relaxed,146750.0,Natural World: Zambezi (2012),https://www.imdb.com/title/tt2496558/?ref_=fn_tt_tt_1,,sub_02_vid_06.npz,154,154
+2,F,25-29,2,7,scary-1,scary,197000.0,Shutter (2004),https://www.imdb.com/title/tt0440803/?ref_=nv_sr_2,Clip 1 and 2 stitched. Clip 1 --  1st scene.  Clip 2 --  2nd scene.,sub_02_vid_07.npz,255,255
+2,F,25-29,2,8,scary-2,scary,143750.0,Mama (2008),https://www.imdb.com/title/tt1315885/,,sub_02_vid_08.npz,149,149
+3,F,30-34,3,1,amusing-1,amusing,185583.333,Hangover (2009),https://www.imdb.com/title/tt1119646/?ref_=nv_sr_1,,sub_03_vid_01.npz,232,232
+3,F,30-34,3,2,amusing-2,amusing,173083.333,When Harry Met Sally (1989),https://www.imdb.com/title/tt0098635/?ref_=nv_sr_1,,sub_03_vid_02.npz,207,207
+3,F,30-34,3,3,boring-1,boring,118666.667,Europe Travel Skills (2013),https://www.youtube.com/watch?v=qUHLCobRgaE,,sub_03_vid_03.npz,98,98
+3,F,30-34,3,4,boring-2,boring,160125.0,Matcha: The way of Tea (2012),https://www.youtube.com/watch?v=IC8zogRPogQ,,sub_03_vid_04.npz,182,182
+3,F,30-34,3,5,relaxed-1,relaxed,145125.0,Relaxing Music with Beach (2011),https://www.youtube.com/watch?v=tnHlB8aQp3Y,,sub_03_vid_05.npz,151,151
+3,F,30-34,3,6,relaxed-2,relaxed,146750.0,Natural World: Zambezi (2012),https://www.imdb.com/title/tt2496558/?ref_=fn_tt_tt_1,,sub_03_vid_06.npz,155,155
+3,F,30-34,3,7,scary-1,scary,197000.0,Shutter (2004),https://www.imdb.com/title/tt0440803/?ref_=nv_sr_2,Clip 1 and 2 stitched. Clip 1 --  1st scene.  Clip 2 --  2nd scene.,sub_03_vid_07.npz,255,255
+3,F,30-34,3,8,scary-2,scary,143750.0,Mama (2008),https://www.imdb.com/title/tt1315885/,,sub_03_vid_08.npz,148,148
+4,F,20-24,4,1,amusing-1,amusing,185583.333,Hangover (2009),https://www.imdb.com/title/tt1119646/?ref_=nv_sr_1,,sub_04_vid_01.npz,232,232
+4,F,20-24,4,2,amusing-2,amusing,173083.333,When Harry Met Sally (1989),https://www.imdb.com/title/tt0098635/?ref_=nv_sr_1,,sub_04_vid_02.npz,207,207
+4,F,20-24,4,3,boring-1,boring,118666.667,Europe Travel Skills (2013),https://www.youtube.com/watch?v=qUHLCobRgaE,,sub_04_vid_03.npz,98,98
+4,F,20-24,4,4,boring-2,boring,160125.0,Matcha: The way of Tea (2012),https://www.youtube.com/watch?v=IC8zogRPogQ,,sub_04_vid_04.npz,181,181
+4,F,20-24,4,5,relaxed-1,relaxed,145125.0,Relaxing Music with Beach (2011),https://www.youtube.com/watch?v=tnHlB8aQp3Y,,sub_04_vid_05.npz,152,152
+4,F,20-24,4,6,relaxed-2,relaxed,146750.0,Natural World: Zambezi (2012),https://www.imdb.com/title/tt2496558/?ref_=fn_tt_tt_1,,sub_04_vid_06.npz,155,155
+4,F,20-24,4,7,scary-1,scary,197000.0,Shutter (2004),https://www.imdb.com/title/tt0440803/?ref_=nv_sr_2,Clip 1 and 2 stitched. Clip 1 --  1st scene.  Clip 2 --  2nd scene.,sub_04_vid_07.npz,255,255
+4,F,20-24,4,8,scary-2,scary,143750.0,Mama (2008),https://www.imdb.com/title/tt1315885/,,sub_04_vid_08.npz,148,148
+5,M,20-24,5,1,amusing-1,amusing,185583.333,Hangover (2009),https://www.imdb.com/title/tt1119646/?ref_=nv_sr_1,,sub_05_vid_01.npz,232,232
+5,M,20-24,5,2,amusing-2,amusing,173083.333,When Harry Met Sally (1989),https://www.imdb.com/title/tt0098635/?ref_=nv_sr_1,,sub_05_vid_02.npz,207,207
+5,M,20-24,5,3,boring-1,boring,118666.667,Europe Travel Skills (2013),https://www.youtube.com/watch?v=qUHLCobRgaE,,sub_05_vid_03.npz,98,98
+5,M,20-24,5,4,boring-2,boring,160125.0,Matcha: The way of Tea (2012),https://www.youtube.com/watch?v=IC8zogRPogQ,,sub_05_vid_04.npz,181,181
+5,M,20-24,5,5,relaxed-1,relaxed,145125.0,Relaxing Music with Beach (2011),https://www.youtube.com/watch?v=tnHlB8aQp3Y,,sub_05_vid_05.npz,151,151
+5,M,20-24,5,6,relaxed-2,relaxed,146750.0,Natural World: Zambezi (2012),https://www.imdb.com/title/tt2496558/?ref_=fn_tt_tt_1,,sub_05_vid_06.npz,155,155
+5,M,20-24,5,7,scary-1,scary,197000.0,Shutter (2004),https://www.imdb.com/title/tt0440803/?ref_=nv_sr_2,Clip 1 and 2 stitched. Clip 1 --  1st scene.  Clip 2 --  2nd scene.,sub_05_vid_07.npz,255,255
+5,M,20-24,5,8,scary-2,scary,143750.0,Mama (2008),https://www.imdb.com/title/tt1315885/,,sub_05_vid_08.npz,149,149
+6,M,30-34,6,1,amusing-1,amusing,185583.333,Hangover (2009),https://www.imdb.com/title/tt1119646/?ref_=nv_sr_1,,sub_06_vid_01.npz,232,232
+6,M,30-34,6,2,amusing-2,amusing,173083.333,When Harry Met Sally (1989),https://www.imdb.com/title/tt0098635/?ref_=nv_sr_1,,sub_06_vid_02.npz,207,207
+6,M,30-34,6,3,boring-1,boring,118666.667,Europe Travel Skills (2013),https://www.youtube.com/watch?v=qUHLCobRgaE,,sub_06_vid_03.npz,98,98
+6,M,30-34,6,4,boring-2,boring,160125.0,Matcha: The way of Tea (2012),https://www.youtube.com/watch?v=IC8zogRPogQ,,sub_06_vid_04.npz,181,181
+6,M,30-34,6,5,relaxed-1,relaxed,145125.0,Relaxing Music with Beach (2011),https://www.youtube.com/watch?v=tnHlB8aQp3Y,,sub_06_vid_05.npz,152,152
+6,M,30-34,6,6,relaxed-2,relaxed,146750.0,Natural World: Zambezi (2012),https://www.imdb.com/title/tt2496558/?ref_=fn_tt_tt_1,,sub_06_vid_06.npz,154,154
+6,M,30-34,6,7,scary-1,scary,197000.0,Shutter (2004),https://www.imdb.com/title/tt0440803/?ref_=nv_sr_2,Clip 1 and 2 stitched. Clip 1 --  1st scene.  Clip 2 --  2nd scene.,sub_06_vid_07.npz,255,255
+6,M,30-34,6,8,scary-2,scary,143750.0,Mama (2008),https://www.imdb.com/title/tt1315885/,,sub_06_vid_08.npz,149,149
+7,M,25-29,7,1,amusing-1,amusing,185583.333,Hangover (2009),https://www.imdb.com/title/tt1119646/?ref_=nv_sr_1,,sub_07_vid_01.npz,232,232
+7,M,25-29,7,2,amusing-2,amusing,173083.333,When Harry Met Sally (1989),https://www.imdb.com/title/tt0098635/?ref_=nv_sr_1,,sub_07_vid_02.npz,207,207
+7,M,25-29,7,3,boring-1,boring,118666.667,Europe Travel Skills (2013),https://www.youtube.com/watch?v=qUHLCobRgaE,,sub_07_vid_03.npz,98,98
+7,M,25-29,7,4,boring-2,boring,160125.0,Matcha: The way of Tea (2012),https://www.youtube.com/watch?v=IC8zogRPogQ,,sub_07_vid_04.npz,182,182
+7,M,25-29,7,5,relaxed-1,relaxed,145125.0,Relaxing Music with Beach (2011),https://www.youtube.com/watch?v=tnHlB8aQp3Y,,sub_07_vid_05.npz,151,151
+7,M,25-29,7,6,relaxed-2,relaxed,146750.0,Natural World: Zambezi (2012),https://www.imdb.com/title/tt2496558/?ref_=fn_tt_tt_1,,sub_07_vid_06.npz,155,155
+7,M,25-29,7,7,scary-1,scary,197000.0,Shutter (2004),https://www.imdb.com/title/tt0440803/?ref_=nv_sr_2,Clip 1 and 2 stitched. Clip 1 --  1st scene.  Clip 2 --  2nd scene.,sub_07_vid_07.npz,255,255
+7,M,25-29,7,8,scary-2,scary,143750.0,Mama (2008),https://www.imdb.com/title/tt1315885/,,sub_07_vid_08.npz,148,148
+8,F,25-29,8,1,amusing-1,amusing,185583.333,Hangover (2009),https://www.imdb.com/title/tt1119646/?ref_=nv_sr_1,,sub_08_vid_01.npz,232,232
+8,F,25-29,8,2,amusing-2,amusing,173083.333,When Harry Met Sally (1989),https://www.imdb.com/title/tt0098635/?ref_=nv_sr_1,,sub_08_vid_02.npz,207,207
+8,F,25-29,8,3,boring-1,boring,118666.667,Europe Travel Skills (2013),https://www.youtube.com/watch?v=qUHLCobRgaE,,sub_08_vid_03.npz,98,98
+8,F,25-29,8,4,boring-2,boring,160125.0,Matcha: The way of Tea (2012),https://www.youtube.com/watch?v=IC8zogRPogQ,,sub_08_vid_04.npz,182,182
+8,F,25-29,8,5,relaxed-1,relaxed,145125.0,Relaxing Music with Beach (2011),https://www.youtube.com/watch?v=tnHlB8aQp3Y,,sub_08_vid_05.npz,151,151
+8,F,25-29,8,6,relaxed-2,relaxed,146750.0,Natural World: Zambezi (2012),https://www.imdb.com/title/tt2496558/?ref_=fn_tt_tt_1,,sub_08_vid_06.npz,154,154
+8,F,25-29,8,7,scary-1,scary,197000.0,Shutter (2004),https://www.imdb.com/title/tt0440803/?ref_=nv_sr_2,Clip 1 and 2 stitched. Clip 1 --  1st scene.  Clip 2 --  2nd scene.,sub_08_vid_07.npz,255,255
+8,F,25-29,8,8,scary-2,scary,143750.0,Mama (2008),https://www.imdb.com/title/tt1315885/,,sub_08_vid_08.npz,149,149
+9,F,20-24,9,1,amusing-1,amusing,185583.333,Hangover (2009),https://www.imdb.com/title/tt1119646/?ref_=nv_sr_1,,sub_09_vid_01.npz,232,232
+9,F,20-24,9,2,amusing-2,amusing,173083.333,When Harry Met Sally (1989),https://www.imdb.com/title/tt0098635/?ref_=nv_sr_1,,sub_09_vid_02.npz,207,207
+9,F,20-24,9,3,boring-1,boring,118666.667,Europe Travel Skills (2013),https://www.youtube.com/watch?v=qUHLCobRgaE,,sub_09_vid_03.npz,98,98
+9,F,20-24,9,4,boring-2,boring,160125.0,Matcha: The way of Tea (2012),https://www.youtube.com/watch?v=IC8zogRPogQ,,sub_09_vid_04.npz,181,181
+9,F,20-24,9,5,relaxed-1,relaxed,145125.0,Relaxing Music with Beach (2011),https://www.youtube.com/watch?v=tnHlB8aQp3Y,,sub_09_vid_05.npz,152,152
+9,F,20-24,9,6,relaxed-2,relaxed,146750.0,Natural World: Zambezi (2012),https://www.imdb.com/title/tt2496558/?ref_=fn_tt_tt_1,,sub_09_vid_06.npz,154,154
+9,F,20-24,9,7,scary-1,scary,197000.0,Shutter (2004),https://www.imdb.com/title/tt0440803/?ref_=nv_sr_2,Clip 1 and 2 stitched. Clip 1 --  1st scene.  Clip 2 --  2nd scene.,sub_09_vid_07.npz,255,255
+9,F,20-24,9,8,scary-2,scary,143750.0,Mama (2008),https://www.imdb.com/title/tt1315885/,,sub_09_vid_08.npz,149,149
+10,M,35-39,10,1,amusing-1,amusing,185583.333,Hangover (2009),https://www.imdb.com/title/tt1119646/?ref_=nv_sr_1,,sub_10_vid_01.npz,232,232
+10,M,35-39,10,2,amusing-2,amusing,173083.333,When Harry Met Sally (1989),https://www.imdb.com/title/tt0098635/?ref_=nv_sr_1,,sub_10_vid_02.npz,207,207
+10,M,35-39,10,3,boring-1,boring,118666.667,Europe Travel Skills (2013),https://www.youtube.com/watch?v=qUHLCobRgaE,,sub_10_vid_03.npz,98,98
+10,M,35-39,10,4,boring-2,boring,160125.0,Matcha: The way of Tea (2012),https://www.youtube.com/watch?v=IC8zogRPogQ,,sub_10_vid_04.npz,181,181
+10,M,35-39,10,5,relaxed-1,relaxed,145125.0,Relaxing Music with Beach (2011),https://www.youtube.com/watch?v=tnHlB8aQp3Y,,sub_10_vid_05.npz,152,152
+10,M,35-39,10,6,relaxed-2,relaxed,146750.0,Natural World: Zambezi (2012),https://www.imdb.com/title/tt2496558/?ref_=fn_tt_tt_1,,sub_10_vid_06.npz,155,155
+10,M,35-39,10,7,scary-1,scary,197000.0,Shutter (2004),https://www.imdb.com/title/tt0440803/?ref_=nv_sr_2,Clip 1 and 2 stitched. Clip 1 --  1st scene.  Clip 2 --  2nd scene.,sub_10_vid_07.npz,255,255
+10,M,35-39,10,8,scary-2,scary,143750.0,Mama (2008),https://www.imdb.com/title/tt1315885/,,sub_10_vid_08.npz,148,148
+11,M,25-29,11,1,amusing-1,amusing,185583.333,Hangover (2009),https://www.imdb.com/title/tt1119646/?ref_=nv_sr_1,,sub_11_vid_01.npz,232,232
+11,M,25-29,11,2,amusing-2,amusing,173083.333,When Harry Met Sally (1989),https://www.imdb.com/title/tt0098635/?ref_=nv_sr_1,,sub_11_vid_02.npz,207,207
+11,M,25-29,11,3,boring-1,boring,118666.667,Europe Travel Skills (2013),https://www.youtube.com/watch?v=qUHLCobRgaE,,sub_11_vid_03.npz,98,98
+11,M,25-29,11,4,boring-2,boring,160125.0,Matcha: The way of Tea (2012),https://www.youtube.com/watch?v=IC8zogRPogQ,,sub_11_vid_04.npz,181,181
+11,M,25-29,11,5,relaxed-1,relaxed,145125.0,Relaxing Music with Beach (2011),https://www.youtube.com/watch?v=tnHlB8aQp3Y,,sub_11_vid_05.npz,151,151
+11,M,25-29,11,6,relaxed-2,relaxed,146750.0,Natural World: Zambezi (2012),https://www.imdb.com/title/tt2496558/?ref_=fn_tt_tt_1,,sub_11_vid_06.npz,155,155
+11,M,25-29,11,7,scary-1,scary,197000.0,Shutter (2004),https://www.imdb.com/title/tt0440803/?ref_=nv_sr_2,Clip 1 and 2 stitched. Clip 1 --  1st scene.  Clip 2 --  2nd scene.,sub_11_vid_07.npz,255,255
+11,M,25-29,11,8,scary-2,scary,143750.0,Mama (2008),https://www.imdb.com/title/tt1315885/,,sub_11_vid_08.npz,149,149
+12,M,25-29,12,1,amusing-1,amusing,185583.333,Hangover (2009),https://www.imdb.com/title/tt1119646/?ref_=nv_sr_1,,sub_12_vid_01.npz,232,232
+12,M,25-29,12,2,amusing-2,amusing,173083.333,When Harry Met Sally (1989),https://www.imdb.com/title/tt0098635/?ref_=nv_sr_1,,sub_12_vid_02.npz,207,207
+12,M,25-29,12,3,boring-1,boring,118666.667,Europe Travel Skills (2013),https://www.youtube.com/watch?v=qUHLCobRgaE,,sub_12_vid_03.npz,99,99
+12,M,25-29,12,4,boring-2,boring,160125.0,Matcha: The way of Tea (2012),https://www.youtube.com/watch?v=IC8zogRPogQ,,sub_12_vid_04.npz,181,181
+12,M,25-29,12,5,relaxed-1,relaxed,145125.0,Relaxing Music with Beach (2011),https://www.youtube.com/watch?v=tnHlB8aQp3Y,,sub_12_vid_05.npz,151,151
+12,M,25-29,12,6,relaxed-2,relaxed,146750.0,Natural World: Zambezi (2012),https://www.imdb.com/title/tt2496558/?ref_=fn_tt_tt_1,,sub_12_vid_06.npz,154,154
+12,M,25-29,12,7,scary-1,scary,197000.0,Shutter (2004),https://www.imdb.com/title/tt0440803/?ref_=nv_sr_2,Clip 1 and 2 stitched. Clip 1 --  1st scene.  Clip 2 --  2nd scene.,sub_12_vid_07.npz,255,255
+12,M,25-29,12,8,scary-2,scary,143750.0,Mama (2008),https://www.imdb.com/title/tt1315885/,,sub_12_vid_08.npz,149,149
+13,F,25-29,13,1,amusing-1,amusing,185583.333,Hangover (2009),https://www.imdb.com/title/tt1119646/?ref_=nv_sr_1,,sub_13_vid_01.npz,232,232
+13,F,25-29,13,2,amusing-2,amusing,173083.333,When Harry Met Sally (1989),https://www.imdb.com/title/tt0098635/?ref_=nv_sr_1,,sub_13_vid_02.npz,207,207
+13,F,25-29,13,3,boring-1,boring,118666.667,Europe Travel Skills (2013),https://www.youtube.com/watch?v=qUHLCobRgaE,,sub_13_vid_03.npz,98,98
+13,F,25-29,13,4,boring-2,boring,160125.0,Matcha: The way of Tea (2012),https://www.youtube.com/watch?v=IC8zogRPogQ,,sub_13_vid_04.npz,181,181
+13,F,25-29,13,5,relaxed-1,relaxed,145125.0,Relaxing Music with Beach (2011),https://www.youtube.com/watch?v=tnHlB8aQp3Y,,sub_13_vid_05.npz,151,151
+13,F,25-29,13,6,relaxed-2,relaxed,146750.0,Natural World: Zambezi (2012),https://www.imdb.com/title/tt2496558/?ref_=fn_tt_tt_1,,sub_13_vid_06.npz,155,155
+13,F,25-29,13,7,scary-1,scary,197000.0,Shutter (2004),https://www.imdb.com/title/tt0440803/?ref_=nv_sr_2,Clip 1 and 2 stitched. Clip 1 --  1st scene.  Clip 2 --  2nd scene.,sub_13_vid_07.npz,255,255
+13,F,25-29,13,8,scary-2,scary,143750.0,Mama (2008),https://www.imdb.com/title/tt1315885/,,sub_13_vid_08.npz,149,149
+14,M,20-24,14,1,amusing-1,amusing,185583.333,Hangover (2009),https://www.imdb.com/title/tt1119646/?ref_=nv_sr_1,,sub_14_vid_01.npz,232,232
+14,M,20-24,14,2,amusing-2,amusing,173083.333,When Harry Met Sally (1989),https://www.imdb.com/title/tt0098635/?ref_=nv_sr_1,,sub_14_vid_02.npz,207,207
+14,M,20-24,14,3,boring-1,boring,118666.667,Europe Travel Skills (2013),https://www.youtube.com/watch?v=qUHLCobRgaE,,sub_14_vid_03.npz,98,98
+14,M,20-24,14,4,boring-2,boring,160125.0,Matcha: The way of Tea (2012),https://www.youtube.com/watch?v=IC8zogRPogQ,,sub_14_vid_04.npz,181,181
+14,M,20-24,14,5,relaxed-1,relaxed,145125.0,Relaxing Music with Beach (2011),https://www.youtube.com/watch?v=tnHlB8aQp3Y,,sub_14_vid_05.npz,152,152
+14,M,20-24,14,6,relaxed-2,relaxed,146750.0,Natural World: Zambezi (2012),https://www.imdb.com/title/tt2496558/?ref_=fn_tt_tt_1,,sub_14_vid_06.npz,155,155
+14,M,20-24,14,7,scary-1,scary,197000.0,Shutter (2004),https://www.imdb.com/title/tt0440803/?ref_=nv_sr_2,Clip 1 and 2 stitched. Clip 1 --  1st scene.  Clip 2 --  2nd scene.,sub_14_vid_07.npz,255,255
+14,M,20-24,14,8,scary-2,scary,143750.0,Mama (2008),https://www.imdb.com/title/tt1315885/,,sub_14_vid_08.npz,148,148
+15,F,20-24,15,1,amusing-1,amusing,185583.333,Hangover (2009),https://www.imdb.com/title/tt1119646/?ref_=nv_sr_1,,sub_15_vid_01.npz,232,232
+15,F,20-24,15,2,amusing-2,amusing,173083.333,When Harry Met Sally (1989),https://www.imdb.com/title/tt0098635/?ref_=nv_sr_1,,sub_15_vid_02.npz,207,207
+15,F,20-24,15,3,boring-1,boring,118666.667,Europe Travel Skills (2013),https://www.youtube.com/watch?v=qUHLCobRgaE,,sub_15_vid_03.npz,98,98
+15,F,20-24,15,4,boring-2,boring,160125.0,Matcha: The way of Tea (2012),https://www.youtube.com/watch?v=IC8zogRPogQ,,sub_15_vid_04.npz,182,182
+15,F,20-24,15,5,relaxed-1,relaxed,145125.0,Relaxing Music with Beach (2011),https://www.youtube.com/watch?v=tnHlB8aQp3Y,,sub_15_vid_05.npz,151,151
+15,F,20-24,15,6,relaxed-2,relaxed,146750.0,Natural World: Zambezi (2012),https://www.imdb.com/title/tt2496558/?ref_=fn_tt_tt_1,,sub_15_vid_06.npz,155,155
+15,F,20-24,15,7,scary-1,scary,197000.0,Shutter (2004),https://www.imdb.com/title/tt0440803/?ref_=nv_sr_2,Clip 1 and 2 stitched. Clip 1 --  1st scene.  Clip 2 --  2nd scene.,sub_15_vid_07.npz,255,255
+15,F,20-24,15,8,scary-2,scary,143750.0,Mama (2008),https://www.imdb.com/title/tt1315885/,,sub_15_vid_08.npz,148,148
+16,F,20-24,16,1,amusing-1,amusing,185583.333,Hangover (2009),https://www.imdb.com/title/tt1119646/?ref_=nv_sr_1,,sub_16_vid_01.npz,232,232
+16,F,20-24,16,2,amusing-2,amusing,173083.333,When Harry Met Sally (1989),https://www.imdb.com/title/tt0098635/?ref_=nv_sr_1,,sub_16_vid_02.npz,207,207
+16,F,20-24,16,3,boring-1,boring,118666.667,Europe Travel Skills (2013),https://www.youtube.com/watch?v=qUHLCobRgaE,,sub_16_vid_03.npz,98,98
+16,F,20-24,16,4,boring-2,boring,160125.0,Matcha: The way of Tea (2012),https://www.youtube.com/watch?v=IC8zogRPogQ,,sub_16_vid_04.npz,181,181
+16,F,20-24,16,5,relaxed-1,relaxed,145125.0,Relaxing Music with Beach (2011),https://www.youtube.com/watch?v=tnHlB8aQp3Y,,sub_16_vid_05.npz,152,152
+16,F,20-24,16,6,relaxed-2,relaxed,146750.0,Natural World: Zambezi (2012),https://www.imdb.com/title/tt2496558/?ref_=fn_tt_tt_1,,sub_16_vid_06.npz,154,154
+16,F,20-24,16,7,scary-1,scary,197000.0,Shutter (2004),https://www.imdb.com/title/tt0440803/?ref_=nv_sr_2,Clip 1 and 2 stitched. Clip 1 --  1st scene.  Clip 2 --  2nd scene.,sub_16_vid_07.npz,255,255
+16,F,20-24,16,8,scary-2,scary,143750.0,Mama (2008),https://www.imdb.com/title/tt1315885/,,sub_16_vid_08.npz,149,149
+17,F,20-24,17,1,amusing-1,amusing,185583.333,Hangover (2009),https://www.imdb.com/title/tt1119646/?ref_=nv_sr_1,,sub_17_vid_01.npz,232,232
+17,F,20-24,17,2,amusing-2,amusing,173083.333,When Harry Met Sally (1989),https://www.imdb.com/title/tt0098635/?ref_=nv_sr_1,,sub_17_vid_02.npz,207,207
+17,F,20-24,17,3,boring-1,boring,118666.667,Europe Travel Skills (2013),https://www.youtube.com/watch?v=qUHLCobRgaE,,sub_17_vid_03.npz,98,98
+17,F,20-24,17,4,boring-2,boring,160125.0,Matcha: The way of Tea (2012),https://www.youtube.com/watch?v=IC8zogRPogQ,,sub_17_vid_04.npz,182,182
+17,F,20-24,17,5,relaxed-1,relaxed,145125.0,Relaxing Music with Beach (2011),https://www.youtube.com/watch?v=tnHlB8aQp3Y,,sub_17_vid_05.npz,151,151
+17,F,20-24,17,6,relaxed-2,relaxed,146750.0,Natural World: Zambezi (2012),https://www.imdb.com/title/tt2496558/?ref_=fn_tt_tt_1,,sub_17_vid_06.npz,154,154
+17,F,20-24,17,7,scary-1,scary,197000.0,Shutter (2004),https://www.imdb.com/title/tt0440803/?ref_=nv_sr_2,Clip 1 and 2 stitched. Clip 1 --  1st scene.  Clip 2 --  2nd scene.,sub_17_vid_07.npz,255,255
+17,F,20-24,17,8,scary-2,scary,143750.0,Mama (2008),https://www.imdb.com/title/tt1315885/,,sub_17_vid_08.npz,149,149
+18,M,25-29,18,1,amusing-1,amusing,185583.333,Hangover (2009),https://www.imdb.com/title/tt1119646/?ref_=nv_sr_1,,sub_18_vid_01.npz,232,232
+18,M,25-29,18,2,amusing-2,amusing,173083.333,When Harry Met Sally (1989),https://www.imdb.com/title/tt0098635/?ref_=nv_sr_1,,sub_18_vid_02.npz,207,207
+18,M,25-29,18,3,boring-1,boring,118666.667,Europe Travel Skills (2013),https://www.youtube.com/watch?v=qUHLCobRgaE,,sub_18_vid_03.npz,98,98
+18,M,25-29,18,4,boring-2,boring,160125.0,Matcha: The way of Tea (2012),https://www.youtube.com/watch?v=IC8zogRPogQ,,sub_18_vid_04.npz,181,181
+18,M,25-29,18,5,relaxed-1,relaxed,145125.0,Relaxing Music with Beach (2011),https://www.youtube.com/watch?v=tnHlB8aQp3Y,,sub_18_vid_05.npz,152,152
+18,M,25-29,18,6,relaxed-2,relaxed,146750.0,Natural World: Zambezi (2012),https://www.imdb.com/title/tt2496558/?ref_=fn_tt_tt_1,,sub_18_vid_06.npz,155,155
+18,M,25-29,18,7,scary-1,scary,197000.0,Shutter (2004),https://www.imdb.com/title/tt0440803/?ref_=nv_sr_2,Clip 1 and 2 stitched. Clip 1 --  1st scene.  Clip 2 --  2nd scene.,sub_18_vid_07.npz,255,255
+18,M,25-29,18,8,scary-2,scary,143750.0,Mama (2008),https://www.imdb.com/title/tt1315885/,,sub_18_vid_08.npz,148,148
+19,F,20-24,19,1,amusing-1,amusing,185583.333,Hangover (2009),https://www.imdb.com/title/tt1119646/?ref_=nv_sr_1,,sub_19_vid_01.npz,232,232
+19,F,20-24,19,2,amusing-2,amusing,173083.333,When Harry Met Sally (1989),https://www.imdb.com/title/tt0098635/?ref_=nv_sr_1,,sub_19_vid_02.npz,207,207
+19,F,20-24,19,3,boring-1,boring,118666.667,Europe Travel Skills (2013),https://www.youtube.com/watch?v=qUHLCobRgaE,,sub_19_vid_03.npz,98,98
+19,F,20-24,19,4,boring-2,boring,160125.0,Matcha: The way of Tea (2012),https://www.youtube.com/watch?v=IC8zogRPogQ,,sub_19_vid_04.npz,182,182
+19,F,20-24,19,5,relaxed-1,relaxed,145125.0,Relaxing Music with Beach (2011),https://www.youtube.com/watch?v=tnHlB8aQp3Y,,sub_19_vid_05.npz,151,151
+19,F,20-24,19,6,relaxed-2,relaxed,146750.0,Natural World: Zambezi (2012),https://www.imdb.com/title/tt2496558/?ref_=fn_tt_tt_1,,sub_19_vid_06.npz,154,154
+19,F,20-24,19,7,scary-1,scary,197000.0,Shutter (2004),https://www.imdb.com/title/tt0440803/?ref_=nv_sr_2,Clip 1 and 2 stitched. Clip 1 --  1st scene.  Clip 2 --  2nd scene.,sub_19_vid_07.npz,255,255
+19,F,20-24,19,8,scary-2,scary,143750.0,Mama (2008),https://www.imdb.com/title/tt1315885/,,sub_19_vid_08.npz,149,149
+20,M,35-39,20,1,amusing-1,amusing,185583.333,Hangover (2009),https://www.imdb.com/title/tt1119646/?ref_=nv_sr_1,,sub_20_vid_01.npz,232,232
+20,M,35-39,20,2,amusing-2,amusing,173083.333,When Harry Met Sally (1989),https://www.imdb.com/title/tt0098635/?ref_=nv_sr_1,,sub_20_vid_02.npz,207,207
+20,M,35-39,20,3,boring-1,boring,118666.667,Europe Travel Skills (2013),https://www.youtube.com/watch?v=qUHLCobRgaE,,sub_20_vid_03.npz,98,98
+20,M,35-39,20,4,boring-2,boring,160125.0,Matcha: The way of Tea (2012),https://www.youtube.com/watch?v=IC8zogRPogQ,,sub_20_vid_04.npz,181,181
+20,M,35-39,20,5,relaxed-1,relaxed,145125.0,Relaxing Music with Beach (2011),https://www.youtube.com/watch?v=tnHlB8aQp3Y,,sub_20_vid_05.npz,152,152
+20,M,35-39,20,6,relaxed-2,relaxed,146750.0,Natural World: Zambezi (2012),https://www.imdb.com/title/tt2496558/?ref_=fn_tt_tt_1,,sub_20_vid_06.npz,155,155
+20,M,35-39,20,7,scary-1,scary,197000.0,Shutter (2004),https://www.imdb.com/title/tt0440803/?ref_=nv_sr_2,Clip 1 and 2 stitched. Clip 1 --  1st scene.  Clip 2 --  2nd scene.,sub_20_vid_07.npz,255,255
+20,M,35-39,20,8,scary-2,scary,143750.0,Mama (2008),https://www.imdb.com/title/tt1315885/,,sub_20_vid_08.npz,148,148
+21,M,20-24,21,1,amusing-1,amusing,185583.333,Hangover (2009),https://www.imdb.com/title/tt1119646/?ref_=nv_sr_1,,sub_21_vid_01.npz,232,232
+21,M,20-24,21,2,amusing-2,amusing,173083.333,When Harry Met Sally (1989),https://www.imdb.com/title/tt0098635/?ref_=nv_sr_1,,sub_21_vid_02.npz,207,207
+21,M,20-24,21,3,boring-1,boring,118666.667,Europe Travel Skills (2013),https://www.youtube.com/watch?v=qUHLCobRgaE,,sub_21_vid_03.npz,98,98
+21,M,20-24,21,4,boring-2,boring,160125.0,Matcha: The way of Tea (2012),https://www.youtube.com/watch?v=IC8zogRPogQ,,sub_21_vid_04.npz,181,181
+21,M,20-24,21,5,relaxed-1,relaxed,145125.0,Relaxing Music with Beach (2011),https://www.youtube.com/watch?v=tnHlB8aQp3Y,,sub_21_vid_05.npz,151,151
+21,M,20-24,21,6,relaxed-2,relaxed,146750.0,Natural World: Zambezi (2012),https://www.imdb.com/title/tt2496558/?ref_=fn_tt_tt_1,,sub_21_vid_06.npz,155,155
+21,M,20-24,21,7,scary-1,scary,197000.0,Shutter (2004),https://www.imdb.com/title/tt0440803/?ref_=nv_sr_2,Clip 1 and 2 stitched. Clip 1 --  1st scene.  Clip 2 --  2nd scene.,sub_21_vid_07.npz,255,255
+21,M,20-24,21,8,scary-2,scary,143750.0,Mama (2008),https://www.imdb.com/title/tt1315885/,,sub_21_vid_08.npz,149,149
+22,F,20-24,22,1,amusing-1,amusing,185583.333,Hangover (2009),https://www.imdb.com/title/tt1119646/?ref_=nv_sr_1,,sub_22_vid_01.npz,232,232
+22,F,20-24,22,2,amusing-2,amusing,173083.333,When Harry Met Sally (1989),https://www.imdb.com/title/tt0098635/?ref_=nv_sr_1,,sub_22_vid_02.npz,207,207
+22,F,20-24,22,3,boring-1,boring,118666.667,Europe Travel Skills (2013),https://www.youtube.com/watch?v=qUHLCobRgaE,,sub_22_vid_03.npz,99,99
+22,F,20-24,22,4,boring-2,boring,160125.0,Matcha: The way of Tea (2012),https://www.youtube.com/watch?v=IC8zogRPogQ,,sub_22_vid_04.npz,181,181
+22,F,20-24,22,5,relaxed-1,relaxed,145125.0,Relaxing Music with Beach (2011),https://www.youtube.com/watch?v=tnHlB8aQp3Y,,sub_22_vid_05.npz,151,151
+22,F,20-24,22,6,relaxed-2,relaxed,146750.0,Natural World: Zambezi (2012),https://www.imdb.com/title/tt2496558/?ref_=fn_tt_tt_1,,sub_22_vid_06.npz,155,155
+22,F,20-24,22,7,scary-1,scary,197000.0,Shutter (2004),https://www.imdb.com/title/tt0440803/?ref_=nv_sr_2,Clip 1 and 2 stitched. Clip 1 --  1st scene.  Clip 2 --  2nd scene.,sub_22_vid_07.npz,255,255
+22,F,20-24,22,8,scary-2,scary,143750.0,Mama (2008),https://www.imdb.com/title/tt1315885/,,sub_22_vid_08.npz,148,148
+23,M,25-29,23,1,amusing-1,amusing,185583.333,Hangover (2009),https://www.imdb.com/title/tt1119646/?ref_=nv_sr_1,,sub_23_vid_01.npz,232,232
+23,M,25-29,23,2,amusing-2,amusing,173083.333,When Harry Met Sally (1989),https://www.imdb.com/title/tt0098635/?ref_=nv_sr_1,,sub_23_vid_02.npz,207,207
+23,M,25-29,23,3,boring-1,boring,118666.667,Europe Travel Skills (2013),https://www.youtube.com/watch?v=qUHLCobRgaE,,sub_23_vid_03.npz,98,98
+23,M,25-29,23,4,boring-2,boring,160125.0,Matcha: The way of Tea (2012),https://www.youtube.com/watch?v=IC8zogRPogQ,,sub_23_vid_04.npz,182,182
+23,M,25-29,23,5,relaxed-1,relaxed,145125.0,Relaxing Music with Beach (2011),https://www.youtube.com/watch?v=tnHlB8aQp3Y,,sub_23_vid_05.npz,151,151
+23,M,25-29,23,6,relaxed-2,relaxed,146750.0,Natural World: Zambezi (2012),https://www.imdb.com/title/tt2496558/?ref_=fn_tt_tt_1,,sub_23_vid_06.npz,154,154
+23,M,25-29,23,7,scary-1,scary,197000.0,Shutter (2004),https://www.imdb.com/title/tt0440803/?ref_=nv_sr_2,Clip 1 and 2 stitched. Clip 1 --  1st scene.  Clip 2 --  2nd scene.,sub_23_vid_07.npz,255,255
+23,M,25-29,23,8,scary-2,scary,143750.0,Mama (2008),https://www.imdb.com/title/tt1315885/,,sub_23_vid_08.npz,149,149
+24,F,25-29,24,1,amusing-1,amusing,185583.333,Hangover (2009),https://www.imdb.com/title/tt1119646/?ref_=nv_sr_1,,sub_24_vid_01.npz,232,232
+24,F,25-29,24,2,amusing-2,amusing,173083.333,When Harry Met Sally (1989),https://www.imdb.com/title/tt0098635/?ref_=nv_sr_1,,sub_24_vid_02.npz,207,207
+24,F,25-29,24,3,boring-1,boring,118666.667,Europe Travel Skills (2013),https://www.youtube.com/watch?v=qUHLCobRgaE,,sub_24_vid_03.npz,99,99
+24,F,25-29,24,4,boring-2,boring,160125.0,Matcha: The way of Tea (2012),https://www.youtube.com/watch?v=IC8zogRPogQ,,sub_24_vid_04.npz,181,181
+24,F,25-29,24,5,relaxed-1,relaxed,145125.0,Relaxing Music with Beach (2011),https://www.youtube.com/watch?v=tnHlB8aQp3Y,,sub_24_vid_05.npz,151,151
+24,F,25-29,24,6,relaxed-2,relaxed,146750.0,Natural World: Zambezi (2012),https://www.imdb.com/title/tt2496558/?ref_=fn_tt_tt_1,,sub_24_vid_06.npz,154,154
+24,F,25-29,24,7,scary-1,scary,197000.0,Shutter (2004),https://www.imdb.com/title/tt0440803/?ref_=nv_sr_2,Clip 1 and 2 stitched. Clip 1 --  1st scene.  Clip 2 --  2nd scene.,sub_24_vid_07.npz,255,255
+24,F,25-29,24,8,scary-2,scary,143750.0,Mama (2008),https://www.imdb.com/title/tt1315885/,,sub_24_vid_08.npz,149,149
+25,F,25-29,25,1,amusing-1,amusing,185583.333,Hangover (2009),https://www.imdb.com/title/tt1119646/?ref_=nv_sr_1,,sub_25_vid_01.npz,232,232
+25,F,25-29,25,2,amusing-2,amusing,173083.333,When Harry Met Sally (1989),https://www.imdb.com/title/tt0098635/?ref_=nv_sr_1,,sub_25_vid_02.npz,207,207
+25,F,25-29,25,3,boring-1,boring,118666.667,Europe Travel Skills (2013),https://www.youtube.com/watch?v=qUHLCobRgaE,,sub_25_vid_03.npz,98,98
+25,F,25-29,25,4,boring-2,boring,160125.0,Matcha: The way of Tea (2012),https://www.youtube.com/watch?v=IC8zogRPogQ,,sub_25_vid_04.npz,182,182
+25,F,25-29,25,5,relaxed-1,relaxed,145125.0,Relaxing Music with Beach (2011),https://www.youtube.com/watch?v=tnHlB8aQp3Y,,sub_25_vid_05.npz,151,151
+25,F,25-29,25,6,relaxed-2,relaxed,146750.0,Natural World: Zambezi (2012),https://www.imdb.com/title/tt2496558/?ref_=fn_tt_tt_1,,sub_25_vid_06.npz,155,155
+25,F,25-29,25,7,scary-1,scary,197000.0,Shutter (2004),https://www.imdb.com/title/tt0440803/?ref_=nv_sr_2,Clip 1 and 2 stitched. Clip 1 --  1st scene.  Clip 2 --  2nd scene.,sub_25_vid_07.npz,255,255
+25,F,25-29,25,8,scary-2,scary,143750.0,Mama (2008),https://www.imdb.com/title/tt1315885/,,sub_25_vid_08.npz,148,148
+26,M,25-29,26,1,amusing-1,amusing,185583.333,Hangover (2009),https://www.imdb.com/title/tt1119646/?ref_=nv_sr_1,,sub_26_vid_01.npz,232,232
+26,M,25-29,26,2,amusing-2,amusing,173083.333,When Harry Met Sally (1989),https://www.imdb.com/title/tt0098635/?ref_=nv_sr_1,,sub_26_vid_02.npz,207,207
+26,M,25-29,26,3,boring-1,boring,118666.667,Europe Travel Skills (2013),https://www.youtube.com/watch?v=qUHLCobRgaE,,sub_26_vid_03.npz,98,98
+26,M,25-29,26,4,boring-2,boring,160125.0,Matcha: The way of Tea (2012),https://www.youtube.com/watch?v=IC8zogRPogQ,,sub_26_vid_04.npz,181,181
+26,M,25-29,26,5,relaxed-1,relaxed,145125.0,Relaxing Music with Beach (2011),https://www.youtube.com/watch?v=tnHlB8aQp3Y,,sub_26_vid_05.npz,152,152
+26,M,25-29,26,6,relaxed-2,relaxed,146750.0,Natural World: Zambezi (2012),https://www.imdb.com/title/tt2496558/?ref_=fn_tt_tt_1,,sub_26_vid_06.npz,154,154
+26,M,25-29,26,7,scary-1,scary,197000.0,Shutter (2004),https://www.imdb.com/title/tt0440803/?ref_=nv_sr_2,Clip 1 and 2 stitched. Clip 1 --  1st scene.  Clip 2 --  2nd scene.,sub_26_vid_07.npz,255,255
+26,M,25-29,26,8,scary-2,scary,143750.0,Mama (2008),https://www.imdb.com/title/tt1315885/,,sub_26_vid_08.npz,149,149
+27,M,25-29,27,1,amusing-1,amusing,185583.333,Hangover (2009),https://www.imdb.com/title/tt1119646/?ref_=nv_sr_1,,sub_27_vid_01.npz,232,232
+27,M,25-29,27,2,amusing-2,amusing,173083.333,When Harry Met Sally (1989),https://www.imdb.com/title/tt0098635/?ref_=nv_sr_1,,sub_27_vid_02.npz,207,207
+27,M,25-29,27,3,boring-1,boring,118666.667,Europe Travel Skills (2013),https://www.youtube.com/watch?v=qUHLCobRgaE,,sub_27_vid_03.npz,98,98
+27,M,25-29,27,4,boring-2,boring,160125.0,Matcha: The way of Tea (2012),https://www.youtube.com/watch?v=IC8zogRPogQ,,sub_27_vid_04.npz,182,182
+27,M,25-29,27,5,relaxed-1,relaxed,145125.0,Relaxing Music with Beach (2011),https://www.youtube.com/watch?v=tnHlB8aQp3Y,,sub_27_vid_05.npz,151,151
+27,M,25-29,27,6,relaxed-2,relaxed,146750.0,Natural World: Zambezi (2012),https://www.imdb.com/title/tt2496558/?ref_=fn_tt_tt_1,,sub_27_vid_06.npz,155,155
+27,M,25-29,27,7,scary-1,scary,197000.0,Shutter (2004),https://www.imdb.com/title/tt0440803/?ref_=nv_sr_2,Clip 1 and 2 stitched. Clip 1 --  1st scene.  Clip 2 --  2nd scene.,sub_27_vid_07.npz,255,255
+27,M,25-29,27,8,scary-2,scary,143750.0,Mama (2008),https://www.imdb.com/title/tt1315885/,,sub_27_vid_08.npz,148,148
+28,M,25-29,28,1,amusing-1,amusing,185583.333,Hangover (2009),https://www.imdb.com/title/tt1119646/?ref_=nv_sr_1,,sub_28_vid_01.npz,232,232
+28,M,25-29,28,2,amusing-2,amusing,173083.333,When Harry Met Sally (1989),https://www.imdb.com/title/tt0098635/?ref_=nv_sr_1,,sub_28_vid_02.npz,207,207
+28,M,25-29,28,3,boring-1,boring,118666.667,Europe Travel Skills (2013),https://www.youtube.com/watch?v=qUHLCobRgaE,,sub_28_vid_03.npz,99,99
+28,M,25-29,28,4,boring-2,boring,160125.0,Matcha: The way of Tea (2012),https://www.youtube.com/watch?v=IC8zogRPogQ,,sub_28_vid_04.npz,181,181
+28,M,25-29,28,5,relaxed-1,relaxed,145125.0,Relaxing Music with Beach (2011),https://www.youtube.com/watch?v=tnHlB8aQp3Y,,sub_28_vid_05.npz,151,151
+28,M,25-29,28,6,relaxed-2,relaxed,146750.0,Natural World: Zambezi (2012),https://www.imdb.com/title/tt2496558/?ref_=fn_tt_tt_1,,sub_28_vid_06.npz,155,155
+28,M,25-29,28,7,scary-1,scary,197000.0,Shutter (2004),https://www.imdb.com/title/tt0440803/?ref_=nv_sr_2,Clip 1 and 2 stitched. Clip 1 --  1st scene.  Clip 2 --  2nd scene.,sub_28_vid_07.npz,255,255
+28,M,25-29,28,8,scary-2,scary,143750.0,Mama (2008),https://www.imdb.com/title/tt1315885/,,sub_28_vid_08.npz,148,148
+29,M,25-29,29,1,amusing-1,amusing,185583.333,Hangover (2009),https://www.imdb.com/title/tt1119646/?ref_=nv_sr_1,,sub_29_vid_01.npz,232,232
+29,M,25-29,29,2,amusing-2,amusing,173083.333,When Harry Met Sally (1989),https://www.imdb.com/title/tt0098635/?ref_=nv_sr_1,,sub_29_vid_02.npz,207,207
+29,M,25-29,29,3,boring-1,boring,118666.667,Europe Travel Skills (2013),https://www.youtube.com/watch?v=qUHLCobRgaE,,sub_29_vid_03.npz,98,98
+29,M,25-29,29,4,boring-2,boring,160125.0,Matcha: The way of Tea (2012),https://www.youtube.com/watch?v=IC8zogRPogQ,,sub_29_vid_04.npz,182,182
+29,M,25-29,29,5,relaxed-1,relaxed,145125.0,Relaxing Music with Beach (2011),https://www.youtube.com/watch?v=tnHlB8aQp3Y,,sub_29_vid_05.npz,151,151
+29,M,25-29,29,6,relaxed-2,relaxed,146750.0,Natural World: Zambezi (2012),https://www.imdb.com/title/tt2496558/?ref_=fn_tt_tt_1,,sub_29_vid_06.npz,154,154
+29,M,25-29,29,7,scary-1,scary,197000.0,Shutter (2004),https://www.imdb.com/title/tt0440803/?ref_=nv_sr_2,Clip 1 and 2 stitched. Clip 1 --  1st scene.  Clip 2 --  2nd scene.,sub_29_vid_07.npz,255,255
+29,M,25-29,29,8,scary-2,scary,143750.0,Mama (2008),https://www.imdb.com/title/tt1315885/,,sub_29_vid_08.npz,149,149
+30,F,25-29,30,1,amusing-1,amusing,185583.333,Hangover (2009),https://www.imdb.com/title/tt1119646/?ref_=nv_sr_1,,sub_30_vid_01.npz,232,232
+30,F,25-29,30,2,amusing-2,amusing,173083.333,When Harry Met Sally (1989),https://www.imdb.com/title/tt0098635/?ref_=nv_sr_1,,sub_30_vid_02.npz,207,207
+30,F,25-29,30,3,boring-1,boring,118666.667,Europe Travel Skills (2013),https://www.youtube.com/watch?v=qUHLCobRgaE,,sub_30_vid_03.npz,99,99
+30,F,25-29,30,4,boring-2,boring,160125.0,Matcha: The way of Tea (2012),https://www.youtube.com/watch?v=IC8zogRPogQ,,sub_30_vid_04.npz,181,181
+30,F,25-29,30,5,relaxed-1,relaxed,145125.0,Relaxing Music with Beach (2011),https://www.youtube.com/watch?v=tnHlB8aQp3Y,,sub_30_vid_05.npz,151,151
+30,F,25-29,30,6,relaxed-2,relaxed,146750.0,Natural World: Zambezi (2012),https://www.imdb.com/title/tt2496558/?ref_=fn_tt_tt_1,,sub_30_vid_06.npz,154,154
+30,F,25-29,30,7,scary-1,scary,197000.0,Shutter (2004),https://www.imdb.com/title/tt0440803/?ref_=nv_sr_2,Clip 1 and 2 stitched. Clip 1 --  1st scene.  Clip 2 --  2nd scene.,sub_30_vid_07.npz,255,255
+30,F,25-29,30,8,scary-2,scary,143750.0,Mama (2008),https://www.imdb.com/title/tt1315885/,,sub_30_vid_08.npz,149,149
