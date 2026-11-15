@@ -93,3 +93,12 @@ python_print_tree.py
 export_project.py
 project_dump.md
 project_dump.pdf
+
+# Slurm and benchmark runtime logs
+*.out
+*.err
+gpu_info.txt
+test_gpu.out
+
+# Generated benchmark output
+benchmark_results/

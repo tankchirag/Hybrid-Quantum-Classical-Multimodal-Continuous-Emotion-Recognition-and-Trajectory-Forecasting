@@ -25,7 +25,7 @@ dataset:
 
   config_path: "configs/datasets/case.yaml"
 
-  root_dir: "D:/Datasets/CASE/processed"
+  root_dir: "datasets/case_processed"
 
   train_split: "train"
 
@@ -92,6 +92,8 @@ forecasting:
   horizon: 20
 
   forecast_horizon: 20
+
+  allow_target_prefix_slicing: true
 
 # ==========================================================
 # History
@@ -183,9 +185,9 @@ training:
 
   gradient_clip: 1.0
 
-  max_train_batches: null
+  max_train_batches: 2 #null
 
-  max_val_batches: null
+  max_val_batches: 2 #null
 
 # ==========================================================
 # Optimizer

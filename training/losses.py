@@ -64,6 +64,12 @@ def ccc_loss(
     Concordance Correlation Coefficient Loss.
     """
 
+    if pred.shape != target.shape:
+        raise ValueError(
+            "CCC loss requires prediction and target shapes to match; "
+            f"got pred={tuple(pred.shape)}, target={tuple(target.shape)}."
+        )
+
     pred = pred.reshape(-1).float()
     target = target.reshape(-1).float()
 
