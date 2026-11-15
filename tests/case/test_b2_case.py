@@ -18,7 +18,7 @@ from models.wrappers.baseline_b2 import (
 def main():
 
     config = load_config(
-        "configs/case_b1.yaml"
+        "configs/case_b2.yaml"
     )
 
     dataset = CaseTrainingDataset(

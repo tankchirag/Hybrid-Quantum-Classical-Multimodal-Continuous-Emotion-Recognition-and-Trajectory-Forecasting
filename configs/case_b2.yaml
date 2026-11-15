@@ -6,7 +6,7 @@
 
 experiment:
 
-  name: "case_b2"
+  name: "case_b2_V1"
 
   description: >
     Baseline B2 configured for
@@ -83,6 +83,7 @@ recognition:
 
 # ==========================================================
 # Forecasting
+# 20 samples at 2 Hz = 10 seconds
 # ==========================================================
 
 forecasting:
@@ -96,7 +97,8 @@ forecasting:
   allow_target_prefix_slicing: true
 
 # ==========================================================
-# History
+# Affect History
+# 120 samples at 2 Hz = 60 seconds
 # ==========================================================
 
 history:
@@ -109,12 +111,13 @@ history:
 
   use_discrete_history: false
 
-  source: "ground_truth"
+  source: "ground_truth" # Ground truth is allowed during supervised training.
 
-  future_inference_source: "prediction"
+  future_inference_source: "prediction" # Avoid using future ground truth during inference.
 
 # ==========================================================
 # History Encoder
+# 256 / 4 = 64 hidden dimensions
 # ==========================================================
 
 history_encoder:
@@ -153,7 +156,7 @@ model:
 
   num_layers: 4
 
-  dropout: 0.1
+  dropout: 0.15
 
 # ==========================================================
 # Recognition Head
@@ -179,9 +182,9 @@ training:
 
   batch_size: 8
 
-  epochs: 2
+  epochs: 100
 
-  patience: 10
+  patience: 15
 
   gradient_clip: 1.0
 
@@ -199,7 +202,7 @@ optimizer:
 
   lr: 0.0003
 
-  weight_decay: 0.00001
+  weight_decay: 0.0001
 
 # ==========================================================
 # Scheduler
@@ -211,7 +214,7 @@ scheduler:
 
   factor: 0.5
 
-  patience: 3
+  patience: 4
 
   min_lr: 0.000001
 
