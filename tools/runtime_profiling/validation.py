@@ -287,4 +287,3 @@ def inspect_source_input_gradients(
             )
     return summaries, tuple(issues)
 
-
