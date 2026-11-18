@@ -1,0 +1,937 @@
+{
+  "b3": {
+    "atol": 1e-05,
+    "gradient_count": 22,
+    "gradient_summary": {
+      "fusion.angle_encoder.bias": {
+        "all_finite": true,
+        "grad_is_none": false,
+        "max_abs": 0.09872829914093018,
+        "norm": 0.1228332370519638,
+        "requires_grad": true
+      },
+      "fusion.angle_encoder.weight": {
+        "all_finite": true,
+        "grad_is_none": false,
+        "max_abs": 0.028843242675065994,
+        "norm": 0.1515064239501953,
+        "requires_grad": true
+      },
+      "fusion.post_projection.bias": {
+        "all_finite": true,
+        "grad_is_none": false,
+        "max_abs": 0.045709311962127686,
+        "norm": 0.22779369354248047,
+        "requires_grad": true
+      },
+      "fusion.post_projection.weight": {
+        "all_finite": true,
+        "grad_is_none": false,
+        "max_abs": 0.04058021679520607,
+        "norm": 0.37720614671707153,
+        "requires_grad": true
+      },
+      "fusion.pqc.phi": {
+        "all_finite": true,
+        "grad_is_none": false,
+        "max_abs": 0.001078976783901453,
+        "norm": 0.0016736763063818216,
+        "requires_grad": true
+      },
+      "fusion.pqc.theta": {
+        "all_finite": true,
+        "grad_is_none": false,
+        "max_abs": 0.05793789029121399,
+        "norm": 0.085628941655159,
+        "requires_grad": true
+      },
+      "fusion.source_projection.bvp.bias": {
+        "all_finite": true,
+        "grad_is_none": false,
+        "max_abs": 0.0028334225062280893,
+        "norm": 0.005395401269197464,
+        "requires_grad": true
+      },
+      "fusion.source_projection.bvp.weight": {
+        "all_finite": true,
+        "grad_is_none": false,
+        "max_abs": 0.0018919587600976229,
+        "norm": 0.014701217412948608,
+        "requires_grad": true
+      },
+      "fusion.source_projection.ecg.bias": {
+        "all_finite": true,
+        "grad_is_none": false,
+        "max_abs": 0.0028334225062280893,
+        "norm": 0.005395401269197464,
+        "requires_grad": true
+      },
+      "fusion.source_projection.ecg.weight": {
+        "all_finite": true,
+        "grad_is_none": false,
+        "max_abs": 0.0014960255939513445,
+        "norm": 0.011087770573794842,
+        "requires_grad": true
+      },
+      "fusion.source_projection.emg_coru.bias": {
+        "all_finite": true,
+        "grad_is_none": false,
+        "max_abs": 0.0028334225062280893,
+        "norm": 0.005395401269197464,
+        "requires_grad": true
+      },
+      "fusion.source_projection.emg_coru.weight": {
+        "all_finite": true,
+        "grad_is_none": false,
+        "max_abs": 0.0011732249986380339,
+        "norm": 0.011046239174902439,
+        "requires_grad": true
+      },
+      "fusion.source_projection.emg_trap.bias": {
+        "all_finite": true,
+        "grad_is_none": false,
+        "max_abs": 0.0028334225062280893,
+        "norm": 0.005395401269197464,
+        "requires_grad": true
+      },
+      "fusion.source_projection.emg_trap.weight": {
+        "all_finite": true,
+        "grad_is_none": false,
+        "max_abs": 0.0012504508486017585,
+        "norm": 0.00997067429125309,
+        "requires_grad": true
+      },
+      "fusion.source_projection.emg_zygo.bias": {
+        "all_finite": true,
+        "grad_is_none": false,
+        "max_abs": 0.0028334225062280893,
+        "norm": 0.005395401269197464,
+        "requires_grad": true
+      },
+      "fusion.source_projection.emg_zygo.weight": {
+        "all_finite": true,
+        "grad_is_none": false,
+        "max_abs": 0.0015793988713994622,
+        "norm": 0.01084974780678749,
+        "requires_grad": true
+      },
+      "fusion.source_projection.gsr.bias": {
+        "all_finite": true,
+        "grad_is_none": false,
+        "max_abs": 0.0028334225062280893,
+        "norm": 0.005395401269197464,
+        "requires_grad": true
+      },
+      "fusion.source_projection.gsr.weight": {
+        "all_finite": true,
+        "grad_is_none": false,
+        "max_abs": 0.0011669734958559275,
+        "norm": 0.01032663881778717,
+        "requires_grad": true
+      },
+      "fusion.source_projection.rsp.bias": {
+        "all_finite": true,
+        "grad_is_none": false,
+        "max_abs": 0.0028334225062280893,
+        "norm": 0.005395401269197464,
+        "requires_grad": true
+      },
+      "fusion.source_projection.rsp.weight": {
+        "all_finite": true,
+        "grad_is_none": false,
+        "max_abs": 0.0014606441836804152,
+        "norm": 0.010627099312841892,
+        "requires_grad": true
+      },
+      "fusion.source_projection.skt.bias": {
+        "all_finite": true,
+        "grad_is_none": false,
+        "max_abs": 0.0028334225062280893,
+        "norm": 0.005395401269197464,
+        "requires_grad": true
+      },
+      "fusion.source_projection.skt.weight": {
+        "all_finite": true,
+        "grad_is_none": false,
+        "max_abs": 0.001351938466541469,
+        "norm": 0.013227328658103943,
+        "requires_grad": true
+      }
+    },
+    "gradients": {
+      "fusion.angle_encoder.bias": {
+        "max_abs_difference": 0.0,
+        "max_relative_difference": 0.0,
+        "shape": [
+          4
+        ]
+      },
+      "fusion.angle_encoder.weight": {
+        "max_abs_difference": 0.0,
+        "max_relative_difference": 0.0,
+        "shape": [
+          4,
+          64
+        ]
+      },
+      "fusion.post_projection.bias": {
+        "max_abs_difference": 0.0,
+        "max_relative_difference": 0.0,
+        "shape": [
+          256
+        ]
+      },
+      "fusion.post_projection.weight": {
+        "max_abs_difference": 0.0,
+        "max_relative_difference": 0.0,
+        "shape": [
+          256,
+          4
+        ]
+      },
+      "fusion.pqc.phi": {
+        "max_abs_difference": 1.1641532182693481e-10,
+        "max_relative_difference": 2.4976736251576345e-07,
+        "shape": [
+          3,
+          4
+        ]
+      },
+      "fusion.pqc.theta": {
+        "max_abs_difference": 3.725290298461914e-09,
+        "max_relative_difference": 1.7537635326970797e-07,
+        "shape": [
+          3,
+          4
+        ]
+      },
+      "fusion.source_projection.bvp.bias": {
+        "max_abs_difference": 0.0,
+        "max_relative_difference": 0.0,
+        "shape": [
+          16
+        ]
+      },
+      "fusion.source_projection.bvp.weight": {
+        "max_abs_difference": 0.0,
+        "max_relative_difference": 0.0,
+        "shape": [
+          16,
+          128
+        ]
+      },
+      "fusion.source_projection.ecg.bias": {
+        "max_abs_difference": 0.0,
+        "max_relative_difference": 0.0,
+        "shape": [
+          16
+        ]
+      },
+      "fusion.source_projection.ecg.weight": {
+        "max_abs_difference": 0.0,
+        "max_relative_difference": 0.0,
+        "shape": [
+          16,
+          128
+        ]
+      },
+      "fusion.source_projection.emg_coru.bias": {
+        "max_abs_difference": 0.0,
+        "max_relative_difference": 0.0,
+        "shape": [
+          16
+        ]
+      },
+      "fusion.source_projection.emg_coru.weight": {
+        "max_abs_difference": 0.0,
+        "max_relative_difference": 0.0,
+        "shape": [
+          16,
+          128
+        ]
+      },
+      "fusion.source_projection.emg_trap.bias": {
+        "max_abs_difference": 0.0,
+        "max_relative_difference": 0.0,
+        "shape": [
+          16
+        ]
+      },
+      "fusion.source_projection.emg_trap.weight": {
+        "max_abs_difference": 0.0,
+        "max_relative_difference": 0.0,
+        "shape": [
+          16,
+          128
+        ]
+      },
+      "fusion.source_projection.emg_zygo.bias": {
+        "max_abs_difference": 0.0,
+        "max_relative_difference": 0.0,
+        "shape": [
+          16
+        ]
+      },
+      "fusion.source_projection.emg_zygo.weight": {
+        "max_abs_difference": 0.0,
+        "max_relative_difference": 0.0,
+        "shape": [
+          16,
+          128
+        ]
+      },
+      "fusion.source_projection.gsr.bias": {
+        "max_abs_difference": 0.0,
+        "max_relative_difference": 0.0,
+        "shape": [
+          16
+        ]
+      },
+      "fusion.source_projection.gsr.weight": {
+        "max_abs_difference": 0.0,
+        "max_relative_difference": 0.0,
+        "shape": [
+          16,
+          128
+        ]
+      },
+      "fusion.source_projection.rsp.bias": {
+        "max_abs_difference": 0.0,
+        "max_relative_difference": 0.0,
+        "shape": [
+          16
+        ]
+      },
+      "fusion.source_projection.rsp.weight": {
+        "max_abs_difference": 0.0,
+        "max_relative_difference": 0.0,
+        "shape": [
+          16,
+          128
+        ]
+      },
+      "fusion.source_projection.skt.bias": {
+        "max_abs_difference": 0.0,
+        "max_relative_difference": 0.0,
+        "shape": [
+          16
+        ]
+      },
+      "fusion.source_projection.skt.weight": {
+        "max_abs_difference": 0.0,
+        "max_relative_difference": 0.0,
+        "shape": [
+          16,
+          128
+        ]
+      }
+    },
+    "loss": 2.9586057662963867,
+    "max_gradient_abs_difference": 3.725290298461914e-09,
+    "max_output_abs_difference": 0.0,
+    "model": "b3",
+    "output_count": 8,
+    "outputs": {
+      "decoder_outputs": {
+        "max_abs_difference": 0.0,
+        "max_relative_difference": 0.0,
+        "shape": [
+          8,
+          20,
+          256
+        ]
+      },
+      "encoder_outputs": {
+        "max_abs_difference": 0.0,
+        "max_relative_difference": 0.0,
+        "shape": [
+          8,
+          2,
+          256
+        ]
+      },
+      "forecasting.continuous.arousal": {
+        "max_abs_difference": 0.0,
+        "max_relative_difference": 0.0,
+        "shape": [
+          8,
+          20
+        ]
+      },
+      "forecasting.continuous.valence": {
+        "max_abs_difference": 0.0,
+        "max_relative_difference": 0.0,
+        "shape": [
+          8,
+          20
+        ]
+      },
+      "fused": {
+        "max_abs_difference": 0.0,
+        "max_relative_difference": 0.0,
+        "shape": [
+          8,
+          2,
+          256
+        ]
+      },
+      "history_state": {
+        "max_abs_difference": 0.0,
+        "max_relative_difference": 0.0,
+        "shape": [
+          8,
+          64
+        ]
+      },
+      "recognition.continuous.arousal": {
+        "max_abs_difference": 0.0,
+        "max_relative_difference": 0.0,
+        "shape": [
+          8
+        ]
+      },
+      "recognition.continuous.valence": {
+        "max_abs_difference": 0.0,
+        "max_relative_difference": 0.0,
+        "shape": [
+          8
+        ]
+      }
+    },
+    "parameter_manifest_identical": true,
+    "rtol": 0.0001,
+    "source_input_gradients": {
+      "bvp": {
+        "all_finite": true,
+        "norm": 0.00039887416642159224,
+        "shape": [
+          8,
+          2,
+          1
+        ]
+      },
+      "ecg": {
+        "all_finite": true,
+        "norm": 0.0003831483772955835,
+        "shape": [
+          8,
+          2,
+          1
+        ]
+      }
+    },
+    "source_order_identical": true
+  },
+  "qsal": {
+    "atol": 1e-05,
+    "gradient_count": 28,
+    "gradient_summary": {
+      "extractors.encoders.bvp.projection.bias": {
+        "all_finite": true,
+        "grad_is_none": false,
+        "max_abs": 0.0007578385411761701,
+        "norm": 0.0036697438918054104,
+        "requires_grad": true
+      },
+      "extractors.encoders.bvp.projection.weight": {
+        "all_finite": true,
+        "grad_is_none": false,
+        "max_abs": 0.0006584859802387655,
+        "norm": 0.013760903850197792,
+        "requires_grad": true
+      },
+      "extractors.encoders.ecg.projection.bias": {
+        "all_finite": true,
+        "grad_is_none": false,
+        "max_abs": 0.0009802019922062755,
+        "norm": 0.0054395562037825584,
+        "requires_grad": true
+      },
+      "extractors.encoders.ecg.projection.weight": {
+        "all_finite": true,
+        "grad_is_none": false,
+        "max_abs": 0.0006734644994139671,
+        "norm": 0.015257059596478939,
+        "requires_grad": true
+      },
+      "extractors.encoders.emg_coru.projection.bias": {
+        "all_finite": true,
+        "grad_is_none": false,
+        "max_abs": 0.0009310108725912869,
+        "norm": 0.00437219487503171,
+        "requires_grad": true
+      },
+      "extractors.encoders.emg_coru.projection.weight": {
+        "all_finite": true,
+        "grad_is_none": false,
+        "max_abs": 0.0009377793176099658,
+        "norm": 0.016016898676753044,
+        "requires_grad": true
+      },
+      "extractors.encoders.emg_trap.projection.bias": {
+        "all_finite": true,
+        "grad_is_none": false,
+        "max_abs": 0.000488174962811172,
+        "norm": 0.0026364652439951897,
+        "requires_grad": true
+      },
+      "extractors.encoders.emg_trap.projection.weight": {
+        "all_finite": true,
+        "grad_is_none": false,
+        "max_abs": 0.0007240936974994838,
+        "norm": 0.0129037881270051,
+        "requires_grad": true
+      },
+      "extractors.encoders.emg_zygo.projection.bias": {
+        "all_finite": true,
+        "grad_is_none": false,
+        "max_abs": 0.0002793817257042974,
+        "norm": 0.0013570591108873487,
+        "requires_grad": true
+      },
+      "extractors.encoders.emg_zygo.projection.weight": {
+        "all_finite": true,
+        "grad_is_none": false,
+        "max_abs": 0.0006674324395135045,
+        "norm": 0.013458076864480972,
+        "requires_grad": true
+      },
+      "extractors.encoders.gsr.projection.bias": {
+        "all_finite": true,
+        "grad_is_none": false,
+        "max_abs": 0.000616527977399528,
+        "norm": 0.0029491246677935123,
+        "requires_grad": true
+      },
+      "extractors.encoders.gsr.projection.weight": {
+        "all_finite": true,
+        "grad_is_none": false,
+        "max_abs": 0.0010780903976410627,
+        "norm": 0.01839345507323742,
+        "requires_grad": true
+      },
+      "extractors.encoders.rsp.projection.bias": {
+        "all_finite": true,
+        "grad_is_none": false,
+        "max_abs": 0.000885880901478231,
+        "norm": 0.004102459643036127,
+        "requires_grad": true
+      },
+      "extractors.encoders.rsp.projection.weight": {
+        "all_finite": true,
+        "grad_is_none": false,
+        "max_abs": 0.0005929278559051454,
+        "norm": 0.012799341231584549,
+        "requires_grad": true
+      },
+      "extractors.encoders.skt.projection.bias": {
+        "all_finite": true,
+        "grad_is_none": false,
+        "max_abs": 0.0005271106492727995,
+        "norm": 0.0027190246619284153,
+        "requires_grad": true
+      },
+      "extractors.encoders.skt.projection.weight": {
+        "all_finite": true,
+        "grad_is_none": false,
+        "max_abs": 0.0006863005110062659,
+        "norm": 0.012293989770114422,
+        "requires_grad": true
+      },
+      "fusion.fused_to_model.bias": {
+        "all_finite": true,
+        "grad_is_none": false,
+        "max_abs": 0.04290050268173218,
+        "norm": 0.23313729465007782,
+        "requires_grad": true
+      },
+      "fusion.fused_to_model.weight": {
+        "all_finite": true,
+        "grad_is_none": false,
+        "max_abs": 0.05194482579827309,
+        "norm": 1.9272701740264893,
+        "requires_grad": true
+      },
+      "fusion.k_pqc.phi": {
+        "all_finite": true,
+        "grad_is_none": false,
+        "max_abs": 5.7921359257306904e-05,
+        "norm": 7.032886787783355e-05,
+        "requires_grad": true
+      },
+      "fusion.k_pqc.theta": {
+        "all_finite": true,
+        "grad_is_none": false,
+        "max_abs": 0.0009315836359746754,
+        "norm": 0.001613491214811802,
+        "requires_grad": true
+      },
+      "fusion.pqc_to_fused.bias": {
+        "all_finite": true,
+        "grad_is_none": false,
+        "max_abs": 0.02451237104833126,
+        "norm": 0.12926679849624634,
+        "requires_grad": true
+      },
+      "fusion.pqc_to_fused.weight": {
+        "all_finite": true,
+        "grad_is_none": false,
+        "max_abs": 0.018185032531619072,
+        "norm": 0.18300464749336243,
+        "requires_grad": true
+      },
+      "fusion.q_pqc.phi": {
+        "all_finite": true,
+        "grad_is_none": false,
+        "max_abs": 6.115882570156828e-05,
+        "norm": 9.439214773010463e-05,
+        "requires_grad": true
+      },
+      "fusion.q_pqc.theta": {
+        "all_finite": true,
+        "grad_is_none": false,
+        "max_abs": 0.0011374223977327347,
+        "norm": 0.0018195174634456635,
+        "requires_grad": true
+      },
+      "fusion.to_pqc_input.bias": {
+        "all_finite": true,
+        "grad_is_none": false,
+        "max_abs": 0.04211357980966568,
+        "norm": 0.04448885843157768,
+        "requires_grad": true
+      },
+      "fusion.to_pqc_input.weight": {
+        "all_finite": true,
+        "grad_is_none": false,
+        "max_abs": 0.012152924202382565,
+        "norm": 0.06504064798355103,
+        "requires_grad": true
+      },
+      "fusion.v_pqc.phi": {
+        "all_finite": true,
+        "grad_is_none": false,
+        "max_abs": 0.00030384582350961864,
+        "norm": 0.00038046209374442697,
+        "requires_grad": true
+      },
+      "fusion.v_pqc.theta": {
+        "all_finite": true,
+        "grad_is_none": false,
+        "max_abs": 0.0217754989862442,
+        "norm": 0.02547384984791279,
+        "requires_grad": true
+      }
+    },
+    "gradients": {
+      "extractors.encoders.bvp.projection.bias": {
+        "max_abs_difference": 0.0,
+        "max_relative_difference": 0.0,
+        "shape": [
+          128
+        ]
+      },
+      "extractors.encoders.bvp.projection.weight": {
+        "max_abs_difference": 0.0,
+        "max_relative_difference": 0.0,
+        "shape": [
+          128,
+          64
+        ]
+      },
+      "extractors.encoders.ecg.projection.bias": {
+        "max_abs_difference": 0.0,
+        "max_relative_difference": 0.0,
+        "shape": [
+          128
+        ]
+      },
+      "extractors.encoders.ecg.projection.weight": {
+        "max_abs_difference": 0.0,
+        "max_relative_difference": 0.0,
+        "shape": [
+          128,
+          64
+        ]
+      },
+      "extractors.encoders.emg_coru.projection.bias": {
+        "max_abs_difference": 0.0,
+        "max_relative_difference": 0.0,
+        "shape": [
+          128
+        ]
+      },
+      "extractors.encoders.emg_coru.projection.weight": {
+        "max_abs_difference": 0.0,
+        "max_relative_difference": 0.0,
+        "shape": [
+          128,
+          64
+        ]
+      },
+      "extractors.encoders.emg_trap.projection.bias": {
+        "max_abs_difference": 0.0,
+        "max_relative_difference": 0.0,
+        "shape": [
+          128
+        ]
+      },
+      "extractors.encoders.emg_trap.projection.weight": {
+        "max_abs_difference": 0.0,
+        "max_relative_difference": 0.0,
+        "shape": [
+          128,
+          64
+        ]
+      },
+      "extractors.encoders.emg_zygo.projection.bias": {
+        "max_abs_difference": 0.0,
+        "max_relative_difference": 0.0,
+        "shape": [
+          128
+        ]
+      },
+      "extractors.encoders.emg_zygo.projection.weight": {
+        "max_abs_difference": 0.0,
+        "max_relative_difference": 0.0,
+        "shape": [
+          128,
+          64
+        ]
+      },
+      "extractors.encoders.gsr.projection.bias": {
+        "max_abs_difference": 0.0,
+        "max_relative_difference": 0.0,
+        "shape": [
+          128
+        ]
+      },
+      "extractors.encoders.gsr.projection.weight": {
+        "max_abs_difference": 0.0,
+        "max_relative_difference": 0.0,
+        "shape": [
+          128,
+          64
+        ]
+      },
+      "extractors.encoders.rsp.projection.bias": {
+        "max_abs_difference": 0.0,
+        "max_relative_difference": 0.0,
+        "shape": [
+          128
+        ]
+      },
+      "extractors.encoders.rsp.projection.weight": {
+        "max_abs_difference": 0.0,
+        "max_relative_difference": 0.0,
+        "shape": [
+          128,
+          64
+        ]
+      },
+      "extractors.encoders.skt.projection.bias": {
+        "max_abs_difference": 0.0,
+        "max_relative_difference": 0.0,
+        "shape": [
+          128
+        ]
+      },
+      "extractors.encoders.skt.projection.weight": {
+        "max_abs_difference": 0.0,
+        "max_relative_difference": 0.0,
+        "shape": [
+          128,
+          64
+        ]
+      },
+      "fusion.fused_to_model.bias": {
+        "max_abs_difference": 0.0,
+        "max_relative_difference": 0.0,
+        "shape": [
+          256
+        ]
+      },
+      "fusion.fused_to_model.weight": {
+        "max_abs_difference": 0.0,
+        "max_relative_difference": 0.0,
+        "shape": [
+          256,
+          256
+        ]
+      },
+      "fusion.k_pqc.phi": {
+        "max_abs_difference": 2.1827872842550278e-11,
+        "max_relative_difference": 1.0595805151014443e-05,
+        "shape": [
+          3,
+          4
+        ]
+      },
+      "fusion.k_pqc.theta": {
+        "max_abs_difference": 2.3283064365386963e-10,
+        "max_relative_difference": 1.97937687236681e-06,
+        "shape": [
+          3,
+          4
+        ]
+      },
+      "fusion.pqc_to_fused.bias": {
+        "max_abs_difference": 0.0,
+        "max_relative_difference": 0.0,
+        "shape": [
+          256
+        ]
+      },
+      "fusion.pqc_to_fused.weight": {
+        "max_abs_difference": 0.0,
+        "max_relative_difference": 0.0,
+        "shape": [
+          256,
+          4
+        ]
+      },
+      "fusion.q_pqc.phi": {
+        "max_abs_difference": 2.1827872842550278e-11,
+        "max_relative_difference": 9.391142703511428e-07,
+        "shape": [
+          3,
+          4
+        ]
+      },
+      "fusion.q_pqc.theta": {
+        "max_abs_difference": 2.3283064365386963e-10,
+        "max_relative_difference": 5.056464272413979e-07,
+        "shape": [
+          3,
+          4
+        ]
+      },
+      "fusion.to_pqc_input.bias": {
+        "max_abs_difference": 0.0,
+        "max_relative_difference": 0.0,
+        "shape": [
+          4
+        ]
+      },
+      "fusion.to_pqc_input.weight": {
+        "max_abs_difference": 0.0,
+        "max_relative_difference": 0.0,
+        "shape": [
+          4,
+          128
+        ]
+      },
+      "fusion.v_pqc.phi": {
+        "max_abs_difference": 8.731149137020111e-11,
+        "max_relative_difference": 1.993206427692088e-06,
+        "shape": [
+          3,
+          4
+        ]
+      },
+      "fusion.v_pqc.theta": {
+        "max_abs_difference": 5.587935447692871e-09,
+        "max_relative_difference": 5.008811752074837e-07,
+        "shape": [
+          3,
+          4
+        ]
+      }
+    },
+    "loss": 2.709494113922119,
+    "max_gradient_abs_difference": 5.587935447692871e-09,
+    "max_output_abs_difference": 0.0,
+    "model": "qsal",
+    "output_count": 8,
+    "outputs": {
+      "decoder_outputs": {
+        "max_abs_difference": 0.0,
+        "max_relative_difference": 0.0,
+        "shape": [
+          8,
+          20,
+          256
+        ]
+      },
+      "encoder_outputs": {
+        "max_abs_difference": 0.0,
+        "max_relative_difference": 0.0,
+        "shape": [
+          8,
+          2,
+          256
+        ]
+      },
+      "forecasting.continuous.arousal": {
+        "max_abs_difference": 0.0,
+        "max_relative_difference": 0.0,
+        "shape": [
+          8,
+          20
+        ]
+      },
+      "forecasting.continuous.valence": {
+        "max_abs_difference": 0.0,
+        "max_relative_difference": 0.0,
+        "shape": [
+          8,
+          20
+        ]
+      },
+      "fused": {
+        "max_abs_difference": 0.0,
+        "max_relative_difference": 0.0,
+        "shape": [
+          8,
+          2,
+          256
+        ]
+      },
+      "history_state": {
+        "max_abs_difference": 0.0,
+        "max_relative_difference": 0.0,
+        "shape": [
+          8,
+          64
+        ]
+      },
+      "recognition.continuous.arousal": {
+        "max_abs_difference": 0.0,
+        "max_relative_difference": 0.0,
+        "shape": [
+          8
+        ]
+      },
+      "recognition.continuous.valence": {
+        "max_abs_difference": 0.0,
+        "max_relative_difference": 0.0,
+        "shape": [
+          8
+        ]
+      }
+    },
+    "parameter_manifest_identical": true,
+    "rtol": 0.0001,
+    "source_input_gradients": {
+      "bvp": {
+        "all_finite": true,
+        "norm": 0.0008398608188144863,
+        "shape": [
+          8,
+          2,
+          1
+        ]
+      },
+      "ecg": {
+        "all_finite": true,
+        "norm": 0.0010613317135721445,
+        "shape": [
+          8,
+          2,
+          1
+        ]
+      }
+    },
+    "source_order_identical": true
+  }
+}
