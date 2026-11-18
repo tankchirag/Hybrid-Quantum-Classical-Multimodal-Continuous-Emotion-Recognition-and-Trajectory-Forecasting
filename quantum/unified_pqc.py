@@ -104,7 +104,7 @@ class UnifiedPQC(nn.Module):
 
         for i in range(self.num_qubits):
             qml.RY(
-                angles[i],
+                angles[..., i],
                 wires=i,
             )
 
@@ -114,7 +114,7 @@ class UnifiedPQC(nn.Module):
 
             for i in range(self.num_qubits):
                 qml.RY(
-                    angles[i],
+                    angles[..., i],
                     wires=i,
                 )
 
@@ -190,23 +190,15 @@ class UnifiedPQC(nn.Module):
             self.num_qubits,
         )
 
-        outputs = []
-
-        for sample in flat:
-
-            expvals = self.qnode(
-                sample,
-                self.theta,
-                self.phi,
-            )
-
-            outputs.append(
-                torch.stack(expvals)
-            )
+        expvals = self.qnode(
+            flat,
+            self.theta,
+            self.phi,
+        )
 
         outputs = torch.stack(
-            outputs,
-            dim=0,
+            expvals,
+            dim=-1,
         )
 
         return outputs.reshape(

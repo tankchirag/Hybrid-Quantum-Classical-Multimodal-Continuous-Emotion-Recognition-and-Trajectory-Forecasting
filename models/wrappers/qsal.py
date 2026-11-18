@@ -631,6 +631,18 @@ class QSAL(nn.Module):
             )
         )
 
+        active_sources = [
+            source
+            for source, enabled
+            in self.extractors.modalities.items()
+            if enabled
+        ]
+
+        if not active_sources:
+            raise ValueError(
+                "QSAL requires at least one enabled modality."
+            )
+
         # ==================================================
         # QSAL Fusion
         # ==================================================
@@ -649,7 +661,7 @@ class QSAL(nn.Module):
 
                 backend=self.backend,
 
-                sources=None,
+                sources=active_sources,
             )
         )
 

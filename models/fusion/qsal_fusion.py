@@ -199,9 +199,20 @@ class QSALFusion(
         self.backend = backend
 
         self.sources = (
-            sources
-            or self.DEFAULT_SOURCE_ORDER
+            list(self.DEFAULT_SOURCE_ORDER)
+            if sources is None
+            else list(sources)
         )
+
+        if not self.sources:
+            raise ValueError(
+                "QSALFusion requires at least one configured source."
+            )
+
+        if len(self.sources) != len(set(self.sources)):
+            raise ValueError(
+                "QSALFusion source names must be unique."
+            )
 
         # --------------------------------------
         # Fixed QSAL Quantum Dimensions
@@ -284,30 +295,25 @@ class QSALFusion(
             (B,T,N,128)
         """
 
-        source_tokens = []
+        selected_sources = [
+            source
+            for source in self.sources
+            if source in embeddings
+        ]
 
-        for source in self.sources:
-
-            emb = embeddings.get(
-                source,
-                None,
-            )
-
-            if emb is not None:
-
-                source_tokens.append(
-                    emb
-                )
-
-        if len(source_tokens) == 0:
-
-            raise RuntimeError(
-                "QSALFusion received "
-                "no active source embeddings."
+        if selected_sources != self.sources:
+            missing_sources = [
+                source
+                for source in self.sources
+                if source not in embeddings
+            ]
+            raise ValueError(
+                "QSALFusion is missing configured source embeddings: "
+                f"{missing_sources}"
             )
 
         return torch.stack(
-            source_tokens,
+            [embeddings[source] for source in selected_sources],
             dim=2,
         )
 

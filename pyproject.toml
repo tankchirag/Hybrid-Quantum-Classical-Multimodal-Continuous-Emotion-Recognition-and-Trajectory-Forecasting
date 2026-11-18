@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "hybrid-qemotion"
 version = "0.1.0"
 description = "Hybrid Quantum Classical Multimodal Emotion Recognition and Forecasting"
-requires-python = ">=3.10"
+requires-python = ">=3.10,<3.12"
 
 [tool.setuptools]
 include-package-data = true
@@ -14,3 +14,17 @@ include-package-data = true
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["configs*", "datasets*", "models*", "evaluation*", "training*", "utils*"]
+[project.optional-dependencies]
+test = [
+  "pytest>=8,<10",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-ra"
+markers = [
+  "slow: computationally expensive tests",
+  "gpu: tests requiring CUDA",
+  "benchmark: runtime benchmark tests",
+]
