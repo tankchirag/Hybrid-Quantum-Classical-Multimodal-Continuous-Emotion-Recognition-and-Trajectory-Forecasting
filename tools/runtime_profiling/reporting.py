@@ -521,8 +521,11 @@ def _validate_quantum_nodes(value: Any, path: str) -> None:
     metadata = _mapping_at(record.get("metadata"), f"{path}.metadata")
     for node_name, node_value in metadata.items():
         node = _mapping_at(node_value, f"{path}.metadata.{node_name}")
-        for field in ("diff_method", "interface", "pennylane_device", "shots"):
+        for field in ("diff_method", "interface", "pennylane_device"):
             _string_at(node.get(field), f"{path}.metadata.{node_name}.{field}")
+        shots = node.get("shots")
+        if shots is not None:
+            _string_at(shots, f"{path}.metadata.{node_name}.shots")
 
 
 def _validate_forward_backward(value: Any, path: str) -> None:
