@@ -327,6 +327,11 @@ class QSAL(nn.Module):
             "lightning.qubit",
         )
 
+        self.diff_method = qsal_cfg.get(
+            "diff_method",
+            None,
+        )
+
         self.encoding = qsal_cfg.get(
             "encoding",
             "angle",
@@ -662,6 +667,8 @@ class QSAL(nn.Module):
                 backend=self.backend,
 
                 sources=active_sources,
+
+                diff_method=self.diff_method,
             )
         )
 

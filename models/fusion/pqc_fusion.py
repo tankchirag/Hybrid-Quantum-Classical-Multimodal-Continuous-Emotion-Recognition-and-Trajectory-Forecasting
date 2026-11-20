@@ -342,6 +342,11 @@ class BaselineB3PQCFusion(nn.Module):
             "lightning.qubit",
         )
 
+        self.pqc_diff_method = pqc_cfg.get(
+            "diff_method",
+            None,
+        )
+
         self.pqc_shots = pqc_cfg.get(
             "shots",
             None,
@@ -374,6 +379,7 @@ class BaselineB3PQCFusion(nn.Module):
             num_qubits=self.num_qubits,
             depth=self.pqc_depth,
             device_name=self.pqc_backend,
+            diff_method=self.pqc_diff_method,
         )
 
         # ----------------------------------

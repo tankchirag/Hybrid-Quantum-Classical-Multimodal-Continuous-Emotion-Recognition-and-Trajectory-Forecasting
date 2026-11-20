@@ -186,6 +186,7 @@ class QSALFusion(
         sources=None,
         init_sigma=1.0,
         learnable_sigma=True,
+        diff_method=None,
     ) -> None:
 
         super().__init__()
@@ -239,18 +240,21 @@ class QSALFusion(
             num_qubits=num_qubits,
             depth=circuit_depth,
             device_name=backend,
+            diff_method=diff_method,
         )
 
         self.k_pqc = UnifiedPQC(
             num_qubits=num_qubits,
             depth=circuit_depth,
             device_name=backend,
+            diff_method=diff_method,
         )
 
         self.v_pqc = UnifiedPQC(
             num_qubits=num_qubits,
             depth=circuit_depth,
             device_name=backend,
+            diff_method=diff_method,
         )
 
         # --------------------------------------

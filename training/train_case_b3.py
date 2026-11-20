@@ -10,6 +10,7 @@ python -m training.train_case_b3
 
 from __future__ import annotations
 
+import argparse
 import sys
 from pathlib import Path
 
@@ -38,8 +39,19 @@ from training.base_training_script import (
 
 def main():
 
-    config = load_config(
-        "configs/case_b3.yaml"
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--config",
+        default="configs/case_b3.yaml",
+        help="CASE experiment configuration YAML",
+    )
+    args = parser.parse_args()
+
+    config = load_config(args.config)
+
+    run_dir = config.get("logging", {}).get(
+        "run_dir",
+        "runs/case_b3",
     )
 
     run_training(
@@ -50,7 +62,7 @@ def main():
         BaselineB3,
 
         run_dir_name=
-        "runs/case_b3",
+        run_dir,
     )
 
 

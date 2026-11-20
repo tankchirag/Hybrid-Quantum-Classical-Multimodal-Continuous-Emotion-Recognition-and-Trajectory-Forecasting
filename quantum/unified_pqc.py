@@ -52,6 +52,7 @@ class UnifiedPQC(nn.Module):
         num_qubits: int = 4,
         depth: int = 3,
         device_name: str = "lightning.qubit",
+        diff_method: str | None = None,
     ) -> None:
 
         super().__init__()
@@ -84,10 +85,18 @@ class UnifiedPQC(nn.Module):
             wires=num_qubits,
         )
 
+        qnode_kwargs = {
+            "interface": "torch",
+        }
+
+        # None preserves the original QNode construction.
+        if diff_method is not None:
+            qnode_kwargs["diff_method"] = diff_method
+
         self.qnode = qml.QNode(
             self._circuit,
             self.dev,
-            interface="torch",
+            **qnode_kwargs,
         )
 
     def _circuit(

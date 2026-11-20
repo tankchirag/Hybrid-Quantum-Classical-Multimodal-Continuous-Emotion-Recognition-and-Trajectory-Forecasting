@@ -18,6 +18,7 @@ Run
 
 from __future__ import annotations
 
+import argparse
 import sys
 from pathlib import Path
 
@@ -46,8 +47,19 @@ from training.base_training_script import (
 
 def main() -> None:
 
-    config = load_config(
-        "configs/case_qsal.yaml"
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--config",
+        default="configs/case_qsal.yaml",
+        help="CASE experiment configuration YAML",
+    )
+    args = parser.parse_args()
+
+    config = load_config(args.config)
+
+    run_dir = config.get("logging", {}).get(
+        "run_dir",
+        "runs/case_qsal",
     )
 
     print(
@@ -66,7 +78,7 @@ def main() -> None:
         QSAL,
 
         run_dir_name=
-        "runs/case_qsal",
+        run_dir,
     )
 
 
