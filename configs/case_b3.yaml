@@ -173,7 +173,8 @@ pqc:
 
   shots: null
 
-  backend: "lightning.qubit"
+  backend: default.qubit
+  diff_method: backprop
 
   encoding: "angle"
 

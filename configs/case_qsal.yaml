@@ -172,7 +172,8 @@ qsal:
 
   num_heads: 4
 
-  backend: "lightning.qubit"
+  backend: default.qubit
+  diff_method: backprop
 
   encoding: "angle"
 
