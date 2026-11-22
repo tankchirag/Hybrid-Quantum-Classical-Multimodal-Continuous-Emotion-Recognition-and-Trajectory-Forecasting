@@ -1,0 +1,104 @@
+experiment:
+  name: qsal
+  description: 'Quantum Self-Attention Learning framework for multimodal affective
+    computing, recognition, forecasting, temporal modelling, and future state prediction.
+
+    '
+dataset:
+  name: case
+  type: disk
+  config_path: configs/datasets/case.yaml
+  root_dir: datasets/case_processed
+  train_split: train
+  val_split: val
+  test_split: test
+  discrete_cardinalities: {}
+modalities:
+  ecg: true
+  bvp: true
+  gsr: true
+  rsp: true
+  skt: true
+  emg_zygo: true
+  emg_coru: true
+  emg_trap: true
+continuous_labels:
+- valence
+- arousal
+discrete_labels: []
+recognition:
+  enabled: true
+forecasting:
+  enabled: true
+  horizon: 20
+  forecast_horizon: 20
+  allow_target_prefix_slicing: true
+history:
+  enabled: true
+  history_length: 120
+  use_continuous_history: true
+  use_discrete_history: false
+  source: ground_truth
+  future_inference_source: prediction
+history_encoder:
+  enabled: true
+  type: gru
+  auto_scale: true
+  ratio: 4
+  hidden_dim: null
+  num_layers: 2
+  history_dropout: 0.2
+  injection_point: post_fusion
+model:
+  name: qsal
+  emb_dim: 128
+  proj_dim: 64
+  transformer_dim: 256
+  num_heads: 4
+  num_layers: 4
+  dropout: 0.1
+qsal:
+  enabled: true
+  num_qubits: 4
+  circuit_depth: 3
+  fusion_dim: 256
+  num_heads: 4
+  backend: default.qubit
+  diff_method: backprop
+  encoding: angle
+  entanglement: strong
+  shots: null
+recognition_head:
+  enabled: true
+forecast_head:
+  enabled: true
+training:
+  batch_size: 8
+  epochs: 1
+  patience: 10
+  gradient_clip: 1.0
+  max_train_batches: null
+  max_val_batches: null
+optimizer:
+  name: adamw
+  lr: 0.0003
+  weight_decay: 1.0e-05
+scheduler:
+  name: reduce_on_plateau
+  factor: 0.5
+  patience: 3
+  min_lr: 1.0e-06
+loss:
+  alpha: 0.2
+  recognition_weight: 1.0
+  forecast_weight: 1.0
+runtime:
+  device: auto
+  deterministic: true
+  seed: 42
+logging:
+  run_dir: runs/case_qsal_a10080_epoch1_retry2
+  save_best_only: true
+  save_history: true
+  save_config: true
+  log_interval: 20
