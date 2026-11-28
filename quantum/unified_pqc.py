@@ -199,19 +199,24 @@ class UnifiedPQC(nn.Module):
             self.num_qubits,
         )
 
+        # PennyLane CPU simulators must receive a consistent CPU tensor set.
+        # torch.Tensor.to() is differentiable: do not detach or clone into a
+        # fresh leaf tensor, otherwise gradients to theta/phi and upstream
+        # angle encoders would be lost.
+        simulator_device = torch.device("cpu")
+        simulator_angles = flat.to(simulator_device)
+        simulator_theta = self.theta.to(simulator_device)
+        simulator_phi = self.phi.to(simulator_device)
+
         expvals = self.qnode(
-            flat,
-            self.theta,
-            self.phi,
+            simulator_angles,
+            simulator_theta,
+            simulator_phi,
         )
 
-        outputs = torch.stack(
-            expvals,
-            dim=-1,
-        )
+        # QNodes with multiple measurements return a tuple/list of tensors.
+        # Keep this operation differentiable and restore the caller's device.
+        outputs = torch.stack(expvals, dim=-1)
+        outputs = outputs.to(device=angles.device, dtype=angles.dtype)
 
-        return outputs.reshape(
-            B,
-            T,
-            self.num_qubits,
-        )
+        return outputs.reshape(B, T, self.num_qubits)

@@ -71,9 +71,9 @@ class CaseTrainingAdapter:
         # Recognition targets
         # ----------------------------------
 
-        valence_now = y[0, 0]
-
-        arousal_now = y[0, 1]
+        # Recognition: emotion at the last observed timestamp
+        valence_now = label_history[-1, 0]
+        arousal_now = label_history[-1, 1]
 
         continuous_labels = {}
 
